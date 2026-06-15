@@ -6,6 +6,7 @@ import * as directives from "vuetify/directives";
 import "vuetify/styles";
 import "@mdi/font/css/materialdesignicons.css";
 import App from "./App.vue";
+import { router } from "./router";
 
 const vuetify = createVuetify({
   components,
@@ -13,4 +14,4 @@ const vuetify = createVuetify({
   theme: { defaultTheme: "light" },
 });
 
-createApp(App).use(createPinia()).use(vuetify).mount("#app");
+createApp(App).use(createPinia()).use(vuetify).use(router).mount("#app");

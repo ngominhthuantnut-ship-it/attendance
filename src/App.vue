@@ -1,5 +1,7 @@
 <script setup lang="ts"></script>
 
 <template>
-  <div>Attendance app — bootstrap</div>
+  <v-app>
+    <router-view />
+  </v-app>
 </template>

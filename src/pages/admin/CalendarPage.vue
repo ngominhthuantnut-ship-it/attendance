@@ -42,16 +42,19 @@ watch(
   },
 );
 
+// Dùng offset Asia/Ho_Chi_Minh (+07:00), không phải UTC (Z) — nếu không sẽ lệch
+// 7 giờ và bỏ sót/hiện nhầm sự kiện quanh nửa đêm theo giờ VN.
+const TZ_OFFSET = "+07:00";
 const rangeISO = computed(() => {
   if (view.value === "month") {
     const ym = monthOf(anchor.value);
-    return { min: `${monthStart(ym)}T00:00:00Z`, max: `${monthEnd(ym)}T23:59:59Z` };
+    return { min: `${monthStart(ym)}T00:00:00${TZ_OFFSET}`, max: `${monthEnd(ym)}T23:59:59${TZ_OFFSET}` };
   }
   if (view.value === "week") {
     const days = weekDates(anchor.value);
-    return { min: `${days[0]}T00:00:00Z`, max: `${days[6]}T23:59:59Z` };
+    return { min: `${days[0]}T00:00:00${TZ_OFFSET}`, max: `${days[6]}T23:59:59${TZ_OFFSET}` };
   }
-  return { min: `${anchor.value}T00:00:00Z`, max: `${anchor.value}T23:59:59Z` };
+  return { min: `${anchor.value}T00:00:00${TZ_OFFSET}`, max: `${anchor.value}T23:59:59${TZ_OFFSET}` };
 });
 
 const eventsByDate = computed(() => groupEventsByStartDate(cal.events));
@@ -129,8 +132,12 @@ async function onConfirmDelete(): Promise<void> {
 }
 
 async function connect(): Promise<void> {
-  await auth.reconnectCalendar();
-  await reload();
+  try {
+    await auth.reconnectCalendar();
+    await reload();
+  } catch {
+    notify("Kết nối Google Calendar thất bại, vui lòng thử lại", "error");
+  }
 }
 </script>
 

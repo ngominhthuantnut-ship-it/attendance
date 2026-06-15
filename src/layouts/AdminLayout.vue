@@ -1,11 +1,29 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useConfigStore } from "@/stores/useConfigStore";
 
 const router = useRouter();
 const auth = useAuthStore();
-const config = useConfigStore();
+
+const nav = [
+  { title: "Tổng quan", to: "/admin", icon: "mdi-view-dashboard-outline", exact: true },
+  { title: "Lớp học", to: "/admin/classes", icon: "mdi-google-classroom", exact: false },
+  { title: "Học phí", to: "/admin/billing", icon: "mdi-cash-multiple", exact: false },
+  { title: "Lịch", to: "/admin/calendar", icon: "mdi-calendar", exact: false },
+  { title: "Cài đặt", to: "/admin/settings", icon: "mdi-cog-outline", exact: false },
+];
+
+// Tên người đang đăng nhập (chủ hoặc admin phụ), không phải tên chủ trong config.
+const displayName = computed(() => auth.displayName ?? auth.email ?? "Giáo viên");
+const initials = computed(() =>
+  displayName.value
+    .trim()
+    .split(/\s+/)
+    .slice(-2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join(""),
+);
 
 async function logout(): Promise<void> {
   await auth.signOut();
@@ -15,49 +33,79 @@ async function logout(): Promise<void> {
 
 <template>
   <v-app>
-    <v-navigation-drawer permanent>
+    <v-navigation-drawer
+      permanent
+      color="surface"
+      width="264"
+    >
+      <div class="d-flex align-center ga-3 px-5 py-5">
+        <v-avatar
+          color="primary"
+          rounded="lg"
+          size="40"
+        >
+          <v-icon icon="mdi-notebook-check-outline" />
+        </v-avatar>
+        <div class="d-flex flex-column">
+          <span class="text-title-medium font-weight-bold">Điểm danh</span>
+          <span class="text-body-small text-medium-emphasis">Quản lý lớp học</span>
+        </div>
+      </div>
+
+      <v-divider />
+
       <v-list
-        density="compact"
         nav
+        class="px-3 py-3"
       >
         <v-list-item
-          title="Tổng quan"
-          to="/admin"
-          exact
-          prepend-icon="mdi-view-dashboard"
-        />
-        <v-list-item
-          title="Lớp học"
-          to="/admin/classes"
-          prepend-icon="mdi-google-classroom"
-        />
-        <v-list-item
-          title="Học phí"
-          to="/admin/billing"
-          prepend-icon="mdi-cash-multiple"
+          v-for="item in nav"
+          :key="item.to"
+          :title="item.title"
+          :to="item.to"
+          :exact="item.exact"
+          :prepend-icon="item.icon"
+          rounded="lg"
+          color="primary"
+          class="mb-1"
         />
       </v-list>
+
+      <template #append>
+        <v-divider />
+        <div class="pa-3">
+          <v-list-item
+            :title="displayName"
+            subtitle="Đăng xuất"
+            rounded="lg"
+            link
+            @click="logout"
+          >
+            <template #prepend>
+              <v-avatar
+                color="surface-variant"
+                size="36"
+              >
+                <span class="text-label-medium font-weight-bold">{{ initials }}</span>
+              </v-avatar>
+            </template>
+            <template #append>
+              <v-icon
+                icon="mdi-logout"
+                size="small"
+                class="text-medium-emphasis"
+              />
+            </template>
+          </v-list-item>
+        </div>
+      </template>
     </v-navigation-drawer>
 
-    <v-app-bar
-      flat
-      color="surface"
-    >
-      <v-app-bar-title>Quản lý điểm danh</v-app-bar-title>
-      <v-spacer />
-      <span
-        v-if="config.config"
-        class="mr-3 text-body-2"
-      >{{ config.config.teacherName }}</span>
-      <v-btn
-        icon="mdi-logout"
-        variant="text"
-        @click="logout"
-      />
-    </v-app-bar>
-
-    <v-main>
-      <v-container fluid>
+    <v-main class="bg-background">
+      <v-container
+        class="py-6 px-md-8"
+        style="max-width: 1200px;"
+      >
         <router-view />
       </v-container>
     </v-main>

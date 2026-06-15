@@ -25,6 +25,8 @@ const adminRoutes: RouteRecordRaw[] = [
       },
       { path: "students/:studentId", name: "admin-student-detail", component: () => import("@/pages/admin/StudentDetailPage.vue"), props: true },
       { path: "billing", name: "admin-billing", component: () => import("@/pages/admin/BillingOverviewPage.vue") },
+      { path: "settings", name: "admin-settings", component: () => import("@/pages/admin/SettingsPage.vue") },
+      { path: "calendar", name: "admin-calendar", component: () => import("@/pages/admin/CalendarPage.vue") },
     ],
   },
 ];

@@ -13,7 +13,7 @@ service cloud.firestore {
     function isBootstrap() {
       return request.auth != null
           && !exists(configRef())
-          && request.auth.token.email == 'dang.nh.aprotrain@gmail.com'
+          && request.auth.token.email == 'ngominhthuan.tnut@gmail.com'
           && request.auth.token.email_verified == true;
     }
 

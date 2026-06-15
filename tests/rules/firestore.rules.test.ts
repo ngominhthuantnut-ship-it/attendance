@@ -8,7 +8,7 @@ import {
 import { readFileSync } from "node:fs";
 import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
 
-const TEACHER_EMAIL = "dang.nh.aprotrain@gmail.com";
+const TEACHER_EMAIL = "ngominhthuan.tnut@gmail.com";
 const TEACHER_UID = "teacher-uid-1";
 const OTHER_UID = "other-uid";
 

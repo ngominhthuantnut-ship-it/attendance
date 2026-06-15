@@ -79,7 +79,7 @@ Mục tiêu phụ:
 
 ### FR1 — Authentication
 - Giáo viên đăng nhập bằng Google OAuth (Firebase Auth)
-- Lần đầu hệ thống chưa có teacher → user đăng nhập với email cấu hình sẵn (`dang.nh.aprotrain@gmail.com`) tự động claim role
+- Lần đầu hệ thống chưa có teacher → user đăng nhập với email cấu hình sẵn (`ngominhthuan.tnut@gmail.com`) tự động claim role
 - Phụ huynh: không auth, dùng URL token làm "khoá"
 
 ### FR2 — Lớp học

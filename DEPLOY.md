@@ -30,7 +30,7 @@ After deploy, the app is live at `https://attendance-fa916.web.app`.
 ## First sign-in (bootstrap)
 
 1. Open `https://attendance-fa916.web.app/admin/login`
-2. Click "Đăng nhập với Google" → use **dang.nh.aprotrain@gmail.com**
+2. Click "Đăng nhập với Google" → use **ngominhthuan.tnut@gmail.com**
 3. The first sign-in automatically creates `meta/config` in Firestore with your `teacherUid`
 4. You're now the teacher
 
@@ -58,7 +58,7 @@ npm run deploy
 
 - Free tier (Spark plan) limits: 50K reads/day, 20K writes/day. Read budget per parent visit ≈ 4. Per teacher attendance entry ≈ N students.
 - If you ever change the `teacherUid` (e.g., new Google account), edit `meta/config` directly in Firestore console.
-- The `firestore.rules` bootstrap is hard-coded to the email `dang.nh.aprotrain@gmail.com`. If you change accounts, update the rules and redeploy.
+- The `firestore.rules` bootstrap is hard-coded to the email `ngominhthuan.tnut@gmail.com`. If you change accounts, update the rules and redeploy.
 
 ## Troubleshooting
 

@@ -90,6 +90,19 @@ export function downloadStudentTemplate(): void {
   XLSX.writeFile(wb, "mau-danh-sach-hoc-sinh.xlsx");
 }
 
+/** Tải danh sách mã tra cứu (tên, SĐT phụ huynh, mã) ra Excel. */
+export function downloadStudentCodes(
+  rows: { name: string; parentPhone: string; lookupCode: string }[],
+): void {
+  const header = ["Họ tên", "SĐT phụ huynh", "Mã tra cứu"];
+  const data = rows.map((r) => [r.name, r.parentPhone || "", r.lookupCode || ""]);
+  const ws = XLSX.utils.aoa_to_sheet([header, ...data]);
+  ws["!cols"] = [{ wch: 28 }, { wch: 18 }, { wch: 14 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "MaTraCuu");
+  XLSX.writeFile(wb, "ma-tra-cuu-hoc-sinh.xlsx");
+}
+
 /** Đọc file Excel người dùng tải lên → mảng dòng (key theo header). */
 export async function readStudentRows(file: File): Promise<ExcelRow[]> {
   const buf = await file.arrayBuffer();

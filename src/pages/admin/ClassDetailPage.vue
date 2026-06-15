@@ -13,6 +13,7 @@ import ParentLinkCard from "@/components/ParentLinkCard.vue";
 import MoneyText from "@/components/MoneyText.vue";
 import {
   downloadStudentTemplate,
+  downloadStudentCodes,
   readStudentRows,
   rowsToStudents,
   dedupKey,
@@ -85,8 +86,30 @@ async function refreshMonthPaid(): Promise<void> {
 async function reload(): Promise<void> {
   cls.value = await classes.get(props.classId);
   if (cls.value) {
-    studentList.value = await students.listByClass(props.classId, "active");
+    const list = await students.listByClass(props.classId, "active");
+    // Backfill mã tra cứu cho học sinh cũ (chỉ ghi khi thiếu).
+    const withCodes: Student[] = [];
+    for (const s of list) {
+      withCodes.push(s.lookupCode ? s : { ...s, lookupCode: await students.ensureLookupCode(s) });
+    }
+    studentList.value = withCodes;
     await refreshMonthPaid();
+  }
+}
+
+const downloadingCodes = ref(false);
+function downloadCodes(): void {
+  downloadingCodes.value = true;
+  try {
+    downloadStudentCodes(
+      studentList.value.map((s) => ({
+        name: s.name,
+        parentPhone: s.parentPhone,
+        lookupCode: s.lookupCode ?? "",
+      })),
+    );
+  } finally {
+    downloadingCodes.value = false;
   }
 }
 
@@ -686,6 +709,15 @@ async function saveMakeup(): Promise<void> {
           >
             Nhập từ Excel
           </v-btn>
+          <v-btn
+            v-if="studentList.length"
+            variant="tonal"
+            prepend-icon="mdi-key-outline"
+            :loading="downloadingCodes"
+            @click="downloadCodes"
+          >
+            Tải mã tra cứu
+          </v-btn>
           <v-spacer />
           <v-btn
             color="primary"
@@ -722,7 +754,6 @@ async function saveMakeup(): Promise<void> {
             >
               <v-divider v-if="i > 0" />
               <v-list-item
-                :title="s.name"
                 :subtitle="`SĐT phụ huynh: ${s.parentPhone || '—'}`"
                 @click="router.push({ name: 'admin-student-detail', params: { studentId: s.id } })"
               >
@@ -737,6 +768,19 @@ async function saveMakeup(): Promise<void> {
                     </span>
                   </v-avatar>
                 </template>
+                <v-list-item-title class="d-flex flex-wrap align-center ga-2">
+                  {{ s.name }}
+                  <v-chip
+                    v-if="s.lookupCode"
+                    size="x-small"
+                    color="primary"
+                    variant="tonal"
+                    prepend-icon="mdi-key-variant"
+                    class="code-chip"
+                  >
+                    {{ s.lookupCode }}
+                  </v-chip>
+                </v-list-item-title>
                 <template #append>
                   <v-btn
                     icon="mdi-link-variant"

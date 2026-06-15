@@ -1,4 +1,4 @@
-import { normalizeText } from "./search";
+import { stripDiacritics } from "./search";
 import type { PaymentConfig } from "@/types";
 
 export type { PaymentConfig };
@@ -10,11 +10,12 @@ export function isPaymentConfigured(p: PaymentConfig | undefined | null): p is P
   return !!p && !!p.bankAccount.trim() && !!p.bankCode.trim();
 }
 
-/** Nội dung chuyển khoản: bỏ dấu, viết hoa chữ đầu — an toàn cho ngân hàng. */
+/** Nội dung chuyển khoản: tên học sinh (bỏ dấu, giữ hoa/thường) + tháng học.
+ *  Ví dụ: "Nguyễn Văn A" + "2026-06" -> "Nguyen Van A T62026". */
 export function buildTransferDescription(studentName: string, yearMonth: string): string {
   const [y, m] = yearMonth.split("-");
-  const name = normalizeText(studentName).replace(/\s+/g, " ").trim();
-  return `HP ${name} T${Number(m)}/${y}`;
+  const name = stripDiacritics(studentName).replace(/\s+/g, " ").trim();
+  return `${name} T${Number(m)}${y}`;
 }
 
 export function buildSepayQrUrl(p: PaymentConfig, amount: number, description: string): string {

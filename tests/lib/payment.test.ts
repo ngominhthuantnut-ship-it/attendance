@@ -26,8 +26,9 @@ describe("isPaymentConfigured", () => {
 });
 
 describe("buildTransferDescription", () => {
-  it("strips diacritics and formats HP <name> T<M>/<YYYY>", () => {
-    expect(buildTransferDescription("Nguyễn Văn An", "2026-06")).toBe("HP nguyen van an T6/2026");
+  it("strips diacritics (keeps case) and formats <name> T<M><YYYY>", () => {
+    expect(buildTransferDescription("Nguyễn Văn A", "2026-06")).toBe("Nguyen Van A T62026");
+    expect(buildTransferDescription("Đỗ Thị B", "2026-12")).toBe("Do Thi B T122026");
   });
 });
 

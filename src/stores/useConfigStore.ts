@@ -3,7 +3,7 @@ import { ref, computed } from "vue";
 import { useStorage } from "@vueuse/core";
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getFirebase } from "@/services/firebase";
-import type { AppConfig } from "@/types";
+import type { AppConfig, PaymentConfig } from "@/types";
 import { useAuthStore } from "./useAuthStore";
 
 function normalizeEmail(email: string): string {
@@ -79,6 +79,13 @@ export const useConfigStore = defineStore("config", () => {
     await load();
   }
 
+  const payment = computed(() => cached.value?.payment ?? null);
+
+  async function savePayment(p: PaymentConfig): Promise<void> {
+    await updateDoc(doc(db, "meta/config"), { payment: p });
+    await load();
+  }
+
   return {
     config,
     loading,
@@ -86,10 +93,12 @@ export const useConfigStore = defineStore("config", () => {
     isBootstrapped,
     isOwner,
     adminEmails,
+    payment,
     isCurrentUserTeacher,
     load,
     bootstrap,
     addAdmin,
     removeAdmin,
+    savePayment,
   };
 });

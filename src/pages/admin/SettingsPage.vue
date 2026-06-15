@@ -1,10 +1,43 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
+import { ref, reactive, computed, onMounted, watch } from "vue";
 import { useConfigStore } from "@/stores/useConfigStore";
+import type { PaymentConfig } from "@/types";
 import PageHeader from "@/components/PageHeader.vue";
 import ConfirmDialog from "@/components/ConfirmDialog.vue";
 
 const config = useConfigStore();
+
+const pay = reactive<PaymentConfig>({
+  bankAccount: "",
+  bankCode: "",
+  accountHolder: "",
+  storeName: "",
+  template: "compact",
+  showInfo: true,
+  fullAcc: false,
+});
+const savingPay = ref(false);
+const templateOptions = ["", "compact", "qronly", "standee"];
+
+watch(
+  () => config.payment,
+  (p) => {
+    if (p) Object.assign(pay, p);
+  },
+  { immediate: true },
+);
+
+async function savePayment(): Promise<void> {
+  savingPay.value = true;
+  try {
+    await config.savePayment({ ...pay });
+    notify("Đã lưu thông tin thanh toán");
+  } catch (e) {
+    notify((e as Error).message);
+  } finally {
+    savingPay.value = false;
+  }
+}
 
 const newEmail = ref("");
 const formError = ref("");
@@ -179,6 +212,82 @@ async function doRemove(): Promise<void> {
       >
         Chưa có admin phụ nào.
       </p>
+    </v-card>
+
+    <!-- Thanh toán / QR chuyển khoản -->
+    <v-card class="pa-5 mt-4">
+      <div class="text-title-medium font-weight-bold mb-1">
+        Thanh toán (QR chuyển khoản)
+      </div>
+      <p class="text-body-medium text-medium-emphasis mb-4">
+        Thông tin này dùng để tạo mã QR chuyển khoản hiển thị cho phụ huynh (số tiền tự lấy theo học phí tháng).
+      </p>
+      <v-row dense>
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="pay.bankAccount"
+            label="Số tài khoản *"
+            prepend-inner-icon="mdi-bank"
+            inputmode="numeric"
+          />
+        </v-col>
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="pay.bankCode"
+            label="Mã ngân hàng * (vd: MB, VCB, TCB)"
+            prepend-inner-icon="mdi-bank-outline"
+          />
+        </v-col>
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="pay.accountHolder"
+            label="Tên chủ tài khoản"
+          />
+        </v-col>
+        <v-col cols="12" md="6">
+          <v-text-field
+            v-model="pay.storeName"
+            label="Tên lớp / cửa hàng"
+          />
+        </v-col>
+        <v-col cols="12" md="6">
+          <v-select
+            v-model="pay.template"
+            :items="templateOptions"
+            label="Kiểu ảnh QR (template)"
+          />
+        </v-col>
+        <v-col
+          cols="12"
+          md="6"
+          class="d-flex align-center ga-4"
+        >
+          <v-switch
+            v-model="pay.showInfo"
+            label="Hiện thông tin TK"
+            color="primary"
+            hide-details
+          />
+          <v-switch
+            v-model="pay.fullAcc"
+            label="Hiện đủ số TK"
+            color="primary"
+            hide-details
+          />
+        </v-col>
+      </v-row>
+      <div class="d-flex justify-end mt-2">
+        <v-btn
+          color="primary"
+          variant="flat"
+          prepend-icon="mdi-content-save"
+          :loading="savingPay"
+          :disabled="!pay.bankAccount.trim() || !pay.bankCode.trim()"
+          @click="savePayment"
+        >
+          Lưu thông tin thanh toán
+        </v-btn>
+      </div>
     </v-card>
 
     <ConfirmDialog

@@ -7,6 +7,7 @@ import type { MonthDoc } from "@/types";
 import MonthPicker from "@/components/MonthPicker.vue";
 import AttendanceStatusBadge from "@/components/AttendanceStatusBadge.vue";
 import EmptyState from "@/components/EmptyState.vue";
+import { sanitizeNoteHtml } from "@/lib/sanitizeHtml";
 
 const parent = useParentStore();
 const month = ref(monthOf(todayISO()));
@@ -155,9 +156,11 @@ const result = computed(() => {
                 <div class="text-body-small text-medium-emphasis mb-1">
                   Nhận xét của giáo viên
                 </div>
-                <div style="white-space: pre-wrap;">
-                  {{ s.note }}
-                </div>
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <div
+                  class="note-html"
+                  v-html="sanitizeNoteHtml(s.note ?? '')"
+                />
               </v-alert>
             </div>
           </v-expand-transition>

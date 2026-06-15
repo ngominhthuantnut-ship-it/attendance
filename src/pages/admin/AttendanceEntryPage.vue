@@ -7,6 +7,8 @@ import { useMonthsStore } from "@/stores/useMonthsStore";
 import type { AttendanceStatus, Class, Student } from "@/types";
 import { expandSchedule } from "@/composables/useScheduleCompute";
 import { formatVnDate, monthOf, monthStart, monthEnd, addDays } from "@/lib/dates";
+import { sanitizeNoteHtml, isEmptyHtml } from "@/lib/sanitizeHtml";
+import RichTextEditor from "@/components/RichTextEditor.vue";
 
 const props = defineProps<{ classId: string; date: string }>();
 const router = useRouter();
@@ -59,11 +61,14 @@ async function saveAll(): Promise<void> {
   try {
     const marks = list.value
       .filter((s) => status.value[s.id] && status.value[s.id] !== "unmarked")
-      .map((s) => ({
-        studentId: s.id,
-        status: status.value[s.id] as AttendanceStatus,
-        note: notes.value[s.id] || undefined,
-      }));
+      .map((s) => {
+        const clean = sanitizeNoteHtml(notes.value[s.id] ?? "");
+        return {
+          studentId: s.id,
+          status: status.value[s.id] as AttendanceStatus,
+          note: isEmptyHtml(clean) ? undefined : clean,
+        };
+      });
     await months.markAttendanceBatch(props.classId, props.date, marks);
     snackbarColor.value = "success";
     snackbarText.value = `Đã lưu điểm danh ${marks.length} học sinh`;
@@ -183,57 +188,51 @@ function shiftDate(delta: number): void {
     </div>
 
     <v-card class="mb-4">
-      <v-list lines="two">
-        <template
-          v-for="(s, i) in list"
-          :key="s.id"
-        >
-          <v-divider v-if="i > 0" />
-          <v-list-item :title="s.name">
-            <template #subtitle>
-              <v-text-field
-                v-model="notes[s.id]"
-                placeholder="Ghi chú (tuỳ chọn)"
-                variant="plain"
-                density="compact"
-                hide-details
-                class="mt-n1"
-              />
-            </template>
-            <template #append>
-              <v-btn-toggle
-                v-model="status[s.id]"
-                mandatory="force"
-                density="comfortable"
-                variant="outlined"
-                divided
+      <template
+        v-for="(s, i) in list"
+        :key="s.id"
+      >
+        <v-divider v-if="i > 0" />
+        <div class="pa-4">
+          <div class="d-flex flex-wrap align-center justify-space-between ga-2">
+            <span class="text-body-large font-weight-medium">{{ s.name }}</span>
+            <v-btn-toggle
+              v-model="status[s.id]"
+              mandatory="force"
+              density="comfortable"
+              variant="outlined"
+              divided
+            >
+              <v-btn
+                value="present"
+                color="success"
+                size="small"
               >
-                <v-btn
-                  value="present"
-                  color="success"
-                  size="small"
-                >
-                  Có
-                </v-btn>
-                <v-btn
-                  value="excused"
-                  color="info"
-                  size="small"
-                >
-                  Phép
-                </v-btn>
-                <v-btn
-                  value="absent"
-                  color="error"
-                  size="small"
-                >
-                  Vắng
-                </v-btn>
-              </v-btn-toggle>
-            </template>
-          </v-list-item>
-        </template>
-      </v-list>
+                Có
+              </v-btn>
+              <v-btn
+                value="excused"
+                color="info"
+                size="small"
+              >
+                Phép
+              </v-btn>
+              <v-btn
+                value="absent"
+                color="error"
+                size="small"
+              >
+                Vắng
+              </v-btn>
+            </v-btn-toggle>
+          </div>
+          <RichTextEditor
+            v-model="notes[s.id]"
+            placeholder="Ghi chú / nhận xét (tuỳ chọn)…"
+            class="mt-3"
+          />
+        </div>
+      </template>
     </v-card>
 
     <div class="d-flex justify-end">

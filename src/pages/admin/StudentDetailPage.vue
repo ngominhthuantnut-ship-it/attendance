@@ -12,6 +12,7 @@ import MoneyText from "@/components/MoneyText.vue";
 import AttendanceStatusBadge from "@/components/AttendanceStatusBadge.vue";
 import { parentInvoiceUrl } from "@/services/parentLinkUrl";
 import { formatVnDate } from "@/lib/dates";
+import { sanitizeNoteHtml } from "@/lib/sanitizeHtml";
 
 const props = defineProps<{ studentId: string }>();
 const classes = useClassesStore();
@@ -180,9 +181,11 @@ async function unmarkPaid(): Promise<void> {
                       <div class="text-body-small text-medium-emphasis mb-1">
                         Ghi chú của giáo viên
                       </div>
-                      <div style="white-space: pre-wrap;">
-                        {{ s.note }}
-                      </div>
+                      <!-- eslint-disable-next-line vue/no-v-html -->
+                      <div
+                        class="note-html"
+                        v-html="sanitizeNoteHtml(s.note ?? '')"
+                      />
                     </v-alert>
                   </div>
                 </v-expand-transition>

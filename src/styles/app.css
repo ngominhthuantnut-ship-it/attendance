@@ -11,6 +11,19 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Hiển thị ghi chú HTML (v-html) với định dạng cơ bản. */
+.note-html {
+  word-break: break-word;
+}
+.note-html ul,
+.note-html ol {
+  padding-left: 1.4em;
+  margin: 0.25em 0;
+}
+.note-html p {
+  margin: 0 0 0.25em;
+}
+
 /* Subtle, app-wide custom scrollbar (desktop). */
 * {
   scrollbar-width: thin;

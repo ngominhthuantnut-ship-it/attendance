@@ -341,7 +341,7 @@ function expandSchedule(opts: {
 ```ts
 function getRateAtDate(rateHistory: RateEntry[], dateISO: string): number;
 ```
-Trả về `rate` của entry có `effectiveFrom <= dateISO` lớn nhất. Throw nếu không có entry nào hợp lệ.
+Trả về `rate` của entry có `effectiveFrom <= dateISO` lớn nhất. Nếu `dateISO` đứng trước mọi entry, dùng entry sớm nhất làm **giá nền** (baseline) — đơn giá đầu tiên áp ngược về ngày bắt đầu lớp. Chỉ throw khi `rateHistory` rỗng.
 
 ### `composables/useBillingCompute.ts` (PURE)
 

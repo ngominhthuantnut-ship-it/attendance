@@ -39,7 +39,6 @@ const parentRoutes: RouteRecordRaw[] = [
     meta: { requiresParentToken: true },
     children: [
       { path: "", name: "parent-home", component: () => import("@/pages/parent/ParentHomePage.vue"), props: true },
-      { path: "schedule", name: "parent-schedule", component: () => import("@/pages/parent/ParentSchedulePage.vue"), props: true },
       { path: "attendance", name: "parent-attendance", component: () => import("@/pages/parent/ParentAttendancePage.vue"), props: true },
       { path: "invoice/:yearMonth", name: "parent-invoice", component: () => import("@/pages/parent/ParentInvoicePage.vue"), props: true },
     ],

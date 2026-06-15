@@ -26,8 +26,9 @@ describe("getRateAtDate", () => {
     expect(getRateAtDate(unsorted, "2026-05-15")).toBe(150_000);
   });
 
-  it("throws when no entry has effectiveFrom <= date", () => {
-    expect(() => getRateAtDate(history, "2025-12-31")).toThrow();
+  it("clamps to the earliest entry when date is before all entries (baseline rate)", () => {
+    expect(getRateAtDate(history, "2025-12-31")).toBe(100_000);
+    expect(getRateAtDate(history, "2020-01-01")).toBe(100_000);
   });
 
   it("throws on empty history", () => {

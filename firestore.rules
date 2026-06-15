@@ -5,10 +5,24 @@ service cloud.firestore {
     function configRef() {
       return /databases/$(db)/documents/meta/config;
     }
+    function configData() {
+      return get(configRef()).data;
+    }
+    // Chủ tài khoản gốc — bất biến, chỉ người này quản lý danh sách admin.
+    function isOwner() {
+      return request.auth != null
+          && exists(configRef())
+          && request.auth.uid == configData().teacherUid;
+    }
+    // Teacher = chủ HOẶC email (đã xác thực) nằm trong danh sách adminEmails.
     function isTeacher() {
       return request.auth != null
           && exists(configRef())
-          && request.auth.uid == get(configRef()).data.teacherUid;
+          && request.auth.token.email_verified == true
+          && (
+            request.auth.uid == configData().teacherUid
+            || configData().get('adminEmails', []).hasAny([request.auth.token.email])
+          );
     }
     function isBootstrap() {
       return request.auth != null
@@ -22,8 +36,16 @@ service cloud.firestore {
       allow list: if false;
       allow create: if isBootstrap()
                   && request.resource.data.teacherUid == request.auth.uid;
+      // Mọi teacher sửa được config (vd teacherName), nhưng đổi danh sách admin
+      // (adminEmails) thì chỉ chủ tài khoản. teacherUid bất biến.
       allow update: if isTeacher()
-                  && request.resource.data.teacherUid == resource.data.teacherUid;
+                  && request.resource.data.teacherUid == resource.data.teacherUid
+                  && request.resource.data.get('adminEmails', []) is list
+                  && request.resource.data.get('adminEmails', []).size() <= 50
+                  && (
+                    request.resource.data.get('adminEmails', []) == resource.data.get('adminEmails', [])
+                    || isOwner()
+                  );
       allow delete: if false;
     }
 

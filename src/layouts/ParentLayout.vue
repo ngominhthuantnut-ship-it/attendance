@@ -21,7 +21,6 @@ watch(() => props.token, load);
 
 const links = [
   { to: "", title: "Tổng quan", icon: "mdi-home" },
-  { to: "schedule", title: "Lịch học", icon: "mdi-calendar" },
   { to: "attendance", title: "Điểm danh", icon: "mdi-clipboard-check" },
 ];
 
@@ -44,7 +43,7 @@ void route;
           {{ parent.student.name }}
           <span
             v-if="parent.cls"
-            class="text-caption ml-2"
+            class="text-body-small ml-2"
           >{{ parent.cls.name }}</span>
         </template>
         <template v-else>

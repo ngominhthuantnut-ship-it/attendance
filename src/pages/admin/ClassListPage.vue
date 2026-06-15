@@ -1,16 +1,26 @@
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useClassesStore } from "@/stores/useClassesStore";
 import type { Class } from "@/types";
 import ClassFormDialog from "@/components/ClassFormDialog.vue";
 import EmptyState from "@/components/EmptyState.vue";
-import { formatVnDate, formatVnd } from "@/lib/dates";
+import PageHeader from "@/components/PageHeader.vue";
+import MoneyText from "@/components/MoneyText.vue";
+import { formatVnDate } from "@/lib/dates";
+import { matchesText } from "@/lib/search";
 
 const store = useClassesStore();
 const router = useRouter();
 const items = ref<Class[]>([]);
+const search = ref("");
 const showForm = ref(false);
+
+const filteredItems = computed(() =>
+  search.value.trim()
+    ? items.value.filter((c) => matchesText(c.name, search.value))
+    : items.value,
+);
 
 async function reload(): Promise<void> {
   items.value = await store.list("active");
@@ -45,66 +55,129 @@ async function onSubmit(data: Omit<Class, "id">): Promise<void> {
   await store.create(id, data);
   await reload();
 }
+
+function openDetail(_e: unknown, row: { item: Class }): void {
+  router.push({ name: "admin-class-detail", params: { classId: row.item.id } });
+}
 </script>
 
 <template>
   <div>
-    <div class="d-flex align-center mb-4">
-      <h2 class="text-h5">
-        Lớp học
-      </h2>
-      <v-spacer />
-      <v-btn
-        color="primary"
-        prepend-icon="mdi-plus"
-        @click="showForm = true"
-      >
-        Thêm lớp
-      </v-btn>
-    </div>
-
-    <EmptyState
-      v-if="items.length === 0"
-      title="Chưa có lớp nào"
-      subtitle="Bấm 'Thêm lớp' để tạo lớp đầu tiên"
+    <PageHeader
+      title="Lớp học"
+      subtitle="Quản lý lớp, lịch tuần và đơn giá"
       icon="mdi-google-classroom"
-    />
-
-    <v-data-table
-      v-else
-      :headers="[
-        { title: 'Tên', key: 'name' },
-        { title: 'Bắt đầu', key: 'startDate' },
-        { title: 'Kết thúc', key: 'endDate' },
-        { title: 'Lịch tuần', key: 'days' },
-        { title: 'Đơn giá', key: 'rate' },
-        { title: '', key: 'actions', sortable: false },
-      ]"
-      :items="items"
-      density="comfortable"
     >
-      <template #[`item.startDate`]="{ item }">
-        {{ formatVnDate(item.startDate) }}
-      </template>
-      <template #[`item.endDate`]="{ item }">
-        {{ formatVnDate(item.endDate) }}
-      </template>
-      <template #[`item.days`]="{ item }">
-        {{ dayLabels(item) }}
-      </template>
-      <template #[`item.rate`]="{ item }">
-        {{ formatVnd(currentRate(item)) }}
-      </template>
-      <template #[`item.actions`]="{ item }">
+      <template #actions>
         <v-btn
-          variant="text"
-          size="small"
-          @click="router.push({ name: 'admin-class-detail', params: { classId: item.id } })"
+          color="primary"
+          variant="flat"
+          prepend-icon="mdi-plus"
+          @click="showForm = true"
         >
-          Chi tiết
+          Thêm lớp
         </v-btn>
       </template>
-    </v-data-table>
+    </PageHeader>
+
+    <v-card v-if="items.length === 0">
+      <EmptyState
+        title="Chưa có lớp nào"
+        subtitle="Bấm 'Thêm lớp' để tạo lớp đầu tiên."
+        icon="mdi-google-classroom"
+      >
+        <v-btn
+          color="primary"
+          variant="flat"
+          prepend-icon="mdi-plus"
+          @click="showForm = true"
+        >
+          Thêm lớp
+        </v-btn>
+      </EmptyState>
+    </v-card>
+
+    <template v-else>
+      <v-text-field
+        v-model="search"
+        placeholder="Tìm theo tên lớp…"
+        prepend-inner-icon="mdi-magnify"
+        clearable
+        density="comfortable"
+        hide-details
+        class="mb-3"
+        style="max-width: 360px;"
+      />
+      <v-card>
+        <v-data-table
+          :headers="[
+            { title: 'Tên lớp', key: 'name' },
+            { title: 'Bắt đầu', key: 'startDate' },
+            { title: 'Kết thúc', key: 'endDate' },
+            { title: 'Lịch tuần', key: 'days' },
+            { title: 'Đơn giá', key: 'rate', align: 'end' },
+            { title: '', key: 'actions', sortable: false, align: 'end' },
+          ]"
+          :items="filteredItems"
+          no-data-text="Không tìm thấy lớp phù hợp"
+          density="comfortable"
+          @click:row="openDetail"
+        >
+        <template #[`item.name`]="{ item }">
+          <div class="d-flex align-center ga-3 py-1">
+            <v-avatar
+              color="primary"
+              variant="tonal"
+              rounded="lg"
+              size="36"
+            >
+              <v-icon
+                icon="mdi-book-open-variant"
+                size="small"
+              />
+            </v-avatar>
+            <span class="font-weight-medium">{{ item.name }}</span>
+          </div>
+        </template>
+        <template #[`item.startDate`]="{ item }">
+          {{ formatVnDate(item.startDate) }}
+        </template>
+        <template #[`item.endDate`]="{ item }">
+          {{ formatVnDate(item.endDate) }}
+        </template>
+        <template #[`item.days`]="{ item }">
+          <div class="d-flex flex-wrap ga-1">
+            <v-chip
+              v-for="d in dayLabels(item).split(', ').filter(Boolean)"
+              :key="d"
+              size="x-small"
+              color="primary"
+              variant="tonal"
+            >
+              {{ d }}
+            </v-chip>
+          </div>
+        </template>
+        <template #[`item.rate`]="{ item }">
+          <MoneyText
+            :value="currentRate(item)"
+            class="font-weight-medium"
+          />
+        </template>
+        <template #[`item.actions`]="{ item }">
+          <v-btn
+            variant="text"
+            size="small"
+            color="primary"
+            append-icon="mdi-chevron-right"
+            @click.stop="router.push({ name: 'admin-class-detail', params: { classId: item.id } })"
+          >
+            Chi tiết
+          </v-btn>
+        </template>
+        </v-data-table>
+      </v-card>
+    </template>
 
     <ClassFormDialog
       v-model="showForm"

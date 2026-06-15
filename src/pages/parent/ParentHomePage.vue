@@ -43,19 +43,19 @@ void props;
       variant="tonal"
       color="primary"
     >
-      <p class="text-body-2">
+      <p class="text-body-medium">
         Học sinh
       </p>
-      <p class="text-h5 mb-2">
+      <p class="text-headline-medium mb-2">
         {{ parent.student.name }}
       </p>
-      <p class="text-body-2">
+      <p class="text-body-medium">
         Lớp <strong>{{ parent.cls.name }}</strong>
       </p>
-      <p class="text-body-2">
+      <p class="text-body-medium">
         Lịch học: {{ dayLabel }}
       </p>
-      <p class="text-caption text-medium-emphasis">
+      <p class="text-body-small text-medium-emphasis">
         {{ formatVnDate(parent.cls.startDate) }} – {{ formatVnDate(parent.cls.endDate) }}
       </p>
     </v-card>
@@ -64,7 +64,7 @@ void props;
       v-if="result"
       class="pa-4 mb-3"
     >
-      <p class="text-subtitle-2">
+      <p class="text-title-small">
         Tháng này
       </p>
       <p>Số buổi đã học: {{ result.totals.present + result.totals.absent }}</p>

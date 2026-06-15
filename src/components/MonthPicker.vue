@@ -32,7 +32,7 @@ const label = computed(() => {
       size="small"
       @click="shift(-1)"
     />
-    <span class="text-body-1 font-weight-medium">{{ label }}</span>
+    <span class="text-body-large font-weight-medium">{{ label }}</span>
     <v-btn
       icon="mdi-chevron-right"
       variant="text"

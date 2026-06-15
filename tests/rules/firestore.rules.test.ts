@@ -49,12 +49,30 @@ function anonDb() {
   return env.unauthenticatedContext().firestore();
 }
 
+const ADMIN_EMAIL = "helper@gmail.com";
+function adminDb(email = ADMIN_EMAIL, verified = true) {
+  return env
+    .authenticatedContext("helper-uid", { email, email_verified: verified })
+    .firestore();
+}
+
 async function seedConfig() {
   await env.withSecurityRulesDisabled(async (ctx) => {
     await setDoc(doc(ctx.firestore(), "meta/config"), {
       teacherUid: TEACHER_UID,
       teacherEmail: TEACHER_EMAIL,
       teacherName: "Test Teacher",
+    });
+  });
+}
+
+async function seedConfigWithAdmin(admins: string[] = [ADMIN_EMAIL]) {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), "meta/config"), {
+      teacherUid: TEACHER_UID,
+      teacherEmail: TEACHER_EMAIL,
+      teacherName: "Test Teacher",
+      adminEmails: admins,
     });
   });
 }
@@ -164,6 +182,72 @@ describe("students + months", () => {
     await assertFails(setDoc(doc(anonDb(), "students/s1"), { name: "Mal" }));
     await assertFails(
       setDoc(doc(anonDb(), "students/s1/months/2026-06"), { hacked: true }),
+    );
+  });
+});
+
+describe("admin allow-list", () => {
+  it("listed admin email can create a class", async () => {
+    await seedConfigWithAdmin();
+    await assertSucceeds(setDoc(doc(adminDb(), "classes/c1"), { name: "Toán" }));
+  });
+
+  it("unlisted user still cannot write", async () => {
+    await seedConfigWithAdmin();
+    await assertFails(setDoc(doc(otherDb(), "classes/c1"), { name: "x" }));
+  });
+
+  it("listed admin with unverified email cannot write", async () => {
+    await seedConfigWithAdmin();
+    await assertFails(setDoc(doc(adminDb(ADMIN_EMAIL, false), "classes/c1"), { name: "x" }));
+  });
+
+  it("owner can add an admin email", async () => {
+    await seedConfig();
+    await assertSucceeds(
+      setDoc(doc(teacherDb(), "meta/config"), {
+        teacherUid: TEACHER_UID,
+        teacherEmail: TEACHER_EMAIL,
+        teacherName: "Test Teacher",
+        adminEmails: [ADMIN_EMAIL],
+      }),
+    );
+  });
+
+  it("secondary admin cannot change adminEmails", async () => {
+    await seedConfigWithAdmin([ADMIN_EMAIL]);
+    await assertFails(
+      setDoc(doc(adminDb(), "meta/config"), {
+        teacherUid: TEACHER_UID,
+        teacherEmail: TEACHER_EMAIL,
+        teacherName: "Test Teacher",
+        adminEmails: [ADMIN_EMAIL, "evil@gmail.com"],
+      }),
+    );
+  });
+
+  it("secondary admin can update config without touching adminEmails", async () => {
+    await seedConfigWithAdmin([ADMIN_EMAIL]);
+    await assertSucceeds(
+      setDoc(doc(adminDb(), "meta/config"), {
+        teacherUid: TEACHER_UID,
+        teacherEmail: TEACHER_EMAIL,
+        teacherName: "Đổi tên",
+        adminEmails: [ADMIN_EMAIL],
+      }),
+    );
+  });
+
+  it("rejects adminEmails larger than 50", async () => {
+    await seedConfig();
+    const many = Array.from({ length: 51 }, (_, i) => `a${i}@x.com`);
+    await assertFails(
+      setDoc(doc(teacherDb(), "meta/config"), {
+        teacherUid: TEACHER_UID,
+        teacherEmail: TEACHER_EMAIL,
+        teacherName: "Test Teacher",
+        adminEmails: many,
+      }),
     );
   });
 });

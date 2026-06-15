@@ -13,23 +13,28 @@ import { expandSchedule, type Session } from "./useScheduleCompute";
 
 export function getRateAtDate(history: RateEntry[], date: DateISO): number {
   let best: RateEntry | null = null;
+  let earliest: RateEntry | null = null;
   for (const entry of history) {
+    if (!earliest || compareDate(entry.effectiveFrom, earliest.effectiveFrom) < 0) {
+      earliest = entry;
+    }
     if (compareDate(entry.effectiveFrom, date) <= 0) {
       if (!best || compareDate(entry.effectiveFrom, best.effectiveFrom) > 0) {
         best = entry;
       }
     }
   }
-  if (!best) {
-    throw new Error(
-      `No rate entry effective on or before ${date} (history length=${history.length})`,
-    );
+  if (!earliest) {
+    throw new Error("Cannot resolve rate: rateHistory is empty");
   }
-  return best.rate;
+  // Sessions before the first rate entry bill at the baseline (earliest) rate —
+  // the first rate the teacher set applies back to the class start.
+  return (best ?? earliest).rate;
 }
 
 export interface BilledSession extends Session {
   status: "unmarked" | AttendanceStatus;
+  note?: string;
   rate: number;
   billable: boolean;
   amount: number;
@@ -97,7 +102,7 @@ export function computeMonth(args: ComputeMonthArgs): ComputeMonthResult {
     if (status === "unmarked") totals.projectedAmount += rate;
     else totals.projectedAmount += amount;
 
-    return { ...s, status, rate, billable, amount };
+    return { ...s, status, note: mark?.note, rate, billable, amount };
   });
 
   const paymentStatus: "paid" | "unpaid" = monthDoc?.payment ? "paid" : "unpaid";

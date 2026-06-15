@@ -50,6 +50,10 @@ const session = computed(() => {
 
 const markedCount = computed(() => Object.values(status.value).filter((v) => v !== "unmarked").length);
 
+const snackbar = ref(false);
+const snackbarText = ref("");
+const snackbarColor = ref<"success" | "error">("success");
+
 async function saveAll(): Promise<void> {
   saving.value = true;
   try {
@@ -61,6 +65,14 @@ async function saveAll(): Promise<void> {
         note: notes.value[s.id] || undefined,
       }));
     await months.markAttendanceBatch(props.classId, props.date, marks);
+    snackbarColor.value = "success";
+    snackbarText.value = `Đã lưu điểm danh ${marks.length} học sinh`;
+    snackbar.value = true;
+  } catch (e) {
+    snackbarColor.value = "error";
+    snackbarText.value = "Lưu thất bại, vui lòng thử lại";
+    snackbar.value = true;
+    console.error(e);
   } finally {
     saving.value = false;
   }
@@ -73,80 +85,113 @@ function shiftDate(delta: number): void {
 
 <template>
   <div v-if="cls && session">
-    <div class="d-flex align-center mb-4">
-      <h2 class="text-h5">
-        {{ cls.name }}
-      </h2>
-      <v-spacer />
-      <v-btn
-        variant="text"
-        prepend-icon="mdi-chevron-left"
-        @click="shiftDate(-1)"
-      >
-        Hôm trước
-      </v-btn>
-      <v-btn
-        variant="text"
-        append-icon="mdi-chevron-right"
-        @click="shiftDate(1)"
-      >
-        Hôm sau
-      </v-btn>
-    </div>
-    <p class="text-body-1">
-      {{ formatVnDate(date) }} — {{ session.start }} đến {{ session.end }}
-    </p>
-    <p class="text-caption mb-4">
-      Đã điểm danh: {{ markedCount }}/{{ list.length }}
-    </p>
+    <v-btn
+      variant="text"
+      size="small"
+      prepend-icon="mdi-arrow-left"
+      class="mb-3 ms-n2"
+      @click="router.push({ name: 'admin-class-detail', params: { classId: cls.id } })"
+    >
+      {{ cls.name }}
+    </v-btn>
 
-    <v-list>
-      <v-list-item
-        v-for="s in list"
-        :key="s.id"
-        :title="s.name"
-      >
-        <template #append>
-          <v-btn-toggle
-            v-model="status[s.id]"
-            color="primary"
-            mandatory="force"
-            density="comfortable"
-            class="mr-2"
-          >
-            <v-btn
-              value="present"
-              color="success"
-            >
-              Có
-            </v-btn>
-            <v-btn
-              value="excused"
-              color="info"
-            >
-              Có phép
-            </v-btn>
-            <v-btn
-              value="absent"
-              color="error"
-            >
-              Không phép
-            </v-btn>
-          </v-btn-toggle>
-          <v-text-field
-            v-model="notes[s.id]"
-            placeholder="Ghi chú"
-            density="compact"
-            hide-details
-            style="width: 180px;"
-          />
+    <v-card class="pa-4 pa-sm-5 mb-4">
+      <div class="d-flex align-center ga-3">
+        <v-btn
+          icon="mdi-chevron-left"
+          variant="tonal"
+          size="small"
+          @click="shiftDate(-1)"
+        />
+        <div class="flex-grow-1 text-center">
+          <div class="text-title-large font-weight-bold">
+            {{ formatVnDate(date) }}
+          </div>
+          <div class="text-body-medium text-medium-emphasis">
+            {{ session.start }} – {{ session.end }}
+          </div>
+        </div>
+        <v-btn
+          icon="mdi-chevron-right"
+          variant="tonal"
+          size="small"
+          @click="shiftDate(1)"
+        />
+      </div>
+      <v-divider class="my-4" />
+      <div class="d-flex align-center ga-3">
+        <v-progress-linear
+          :model-value="list.length ? (markedCount / list.length) * 100 : 0"
+          color="primary"
+          height="8"
+          rounded
+          class="flex-grow-1"
+        />
+        <span class="text-body-medium font-weight-medium text-no-wrap">
+          {{ markedCount }}/{{ list.length }}
+        </span>
+      </div>
+    </v-card>
+
+    <v-card class="mb-4">
+      <v-list lines="two">
+        <template
+          v-for="(s, i) in list"
+          :key="s.id"
+        >
+          <v-divider v-if="i > 0" />
+          <v-list-item :title="s.name">
+            <template #subtitle>
+              <v-text-field
+                v-model="notes[s.id]"
+                placeholder="Ghi chú (tuỳ chọn)"
+                variant="plain"
+                density="compact"
+                hide-details
+                class="mt-n1"
+              />
+            </template>
+            <template #append>
+              <v-btn-toggle
+                v-model="status[s.id]"
+                mandatory="force"
+                density="comfortable"
+                variant="outlined"
+                divided
+              >
+                <v-btn
+                  value="present"
+                  color="success"
+                  size="small"
+                >
+                  Có
+                </v-btn>
+                <v-btn
+                  value="excused"
+                  color="info"
+                  size="small"
+                >
+                  Phép
+                </v-btn>
+                <v-btn
+                  value="absent"
+                  color="error"
+                  size="small"
+                >
+                  Vắng
+                </v-btn>
+              </v-btn-toggle>
+            </template>
+          </v-list-item>
         </template>
-      </v-list-item>
-    </v-list>
+      </v-list>
+    </v-card>
 
-    <div class="d-flex justify-end mt-4">
+    <div class="d-flex justify-end">
       <v-btn
         color="primary"
+        variant="flat"
+        size="large"
         :loading="saving"
         prepend-icon="mdi-content-save"
         @click="saveAll"
@@ -154,10 +199,20 @@ function shiftDate(delta: number): void {
         Lưu tất cả
       </v-btn>
     </div>
+
+    <v-snackbar
+      v-model="snackbar"
+      :color="snackbarColor"
+      :timeout="3000"
+      location="bottom"
+    >
+      {{ snackbarText }}
+    </v-snackbar>
   </div>
   <v-alert
     v-else
     type="info"
+    variant="tonal"
   >
     Đang tải buổi học, hoặc ngày này không có buổi.
   </v-alert>

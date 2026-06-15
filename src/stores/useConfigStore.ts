@@ -1,10 +1,14 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { useStorage } from "@vueuse/core";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getFirebase } from "@/services/firebase";
 import type { AppConfig } from "@/types";
 import { useAuthStore } from "./useAuthStore";
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
 
 export const useConfigStore = defineStore("config", () => {
   const { db } = getFirebase();
@@ -17,9 +21,18 @@ export const useConfigStore = defineStore("config", () => {
 
   const config = computed(() => cached.value);
   const isBootstrapped = computed(() => cached.value !== null);
-  const isCurrentUserTeacher = computed(
+  const adminEmails = computed(() => cached.value?.adminEmails ?? []);
+  // Chủ tài khoản gốc.
+  const isOwner = computed(
     () => !!auth.uid && !!cached.value && auth.uid === cached.value.teacherUid,
   );
+  // Teacher = chủ HOẶC email nằm trong danh sách admin phụ.
+  const isCurrentUserTeacher = computed(() => {
+    if (!cached.value) return false;
+    if (isOwner.value) return true;
+    const email = auth.email ? normalizeEmail(auth.email) : null;
+    return !!email && adminEmails.value.includes(email);
+  });
 
   async function load(): Promise<void> {
     loading.value = true;
@@ -50,5 +63,33 @@ export const useConfigStore = defineStore("config", () => {
     cached.value = data;
   }
 
-  return { config, loading, error, isBootstrapped, isCurrentUserTeacher, load, bootstrap };
+  async function addAdmin(email: string): Promise<void> {
+    const e = normalizeEmail(email);
+    if (!e) throw new Error("Email trống");
+    if (e === cached.value?.teacherEmail?.toLowerCase()) {
+      throw new Error("Đây đã là tài khoản chủ");
+    }
+    await updateDoc(doc(db, "meta/config"), { adminEmails: arrayUnion(e) });
+    await load();
+  }
+
+  async function removeAdmin(email: string): Promise<void> {
+    const e = normalizeEmail(email);
+    await updateDoc(doc(db, "meta/config"), { adminEmails: arrayRemove(e) });
+    await load();
+  }
+
+  return {
+    config,
+    loading,
+    error,
+    isBootstrapped,
+    isOwner,
+    adminEmails,
+    isCurrentUserTeacher,
+    load,
+    bootstrap,
+    addAdmin,
+    removeAdmin,
+  };
 });

@@ -32,9 +32,7 @@ const [endDate, endAttrs] = defineField("endDate");
 
 const weekly = ref(props.initial?.weeklySchedule ?? {});
 const rateHistory = ref(
-  props.initial?.rateHistory ?? [
-    { effectiveFrom: new Date().toISOString().slice(0, 10), rate: 150_000 },
-  ],
+  props.initial?.rateHistory ?? [{ effectiveFrom: "", rate: 150_000 }],
 );
 const excludedDates = ref<string[]>(props.initial?.excludedDates ?? []);
 const addedDates = ref(props.initial?.addedDates ?? []);
@@ -52,9 +50,7 @@ watch(
         },
       });
       weekly.value = props.initial?.weeklySchedule ?? {};
-      rateHistory.value = props.initial?.rateHistory ?? [
-        { effectiveFrom: new Date().toISOString().slice(0, 10), rate: 150_000 },
-      ];
+      rateHistory.value = props.initial?.rateHistory ?? [{ effectiveFrom: "", rate: 150_000 }];
       excludedDates.value = props.initial?.excludedDates ?? [];
       addedDates.value = props.initial?.addedDates ?? [];
       status.value = props.initial?.status ?? "active";
@@ -63,12 +59,15 @@ watch(
 );
 
 const submit = handleSubmit((values) => {
+  const rateHistoryOut = rateHistory.value.map((e) =>
+    e.effectiveFrom ? e : { ...e, effectiveFrom: values.startDate },
+  );
   emit("submit", {
     name: values.name,
     startDate: values.startDate,
     endDate: values.endDate,
     weeklySchedule: weekly.value,
-    rateHistory: rateHistory.value,
+    rateHistory: rateHistoryOut,
     excludedDates: excludedDates.value,
     addedDates: addedDates.value,
     status: status.value,
@@ -115,11 +114,11 @@ void endAttrs;
               />
             </v-col>
           </v-row>
-          <p class="text-subtitle-2 mt-4">
+          <p class="text-title-small mt-4">
             Lịch tuần
           </p>
           <ClassScheduleForm v-model="weekly" />
-          <p class="text-subtitle-2 mt-4">
+          <p class="text-title-small mt-4">
             Đơn giá theo thời gian
           </p>
           <RateHistoryEditor v-model="rateHistory" />

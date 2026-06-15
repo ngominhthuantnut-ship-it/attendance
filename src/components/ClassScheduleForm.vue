@@ -51,7 +51,7 @@ function update(key: DayKey, field: "start" | "end", value: string): void {
             :model-value="!!local[d.key]"
             @update:model-value="toggle(d.key)"
           />
-          <span class="text-body-1 font-weight-medium ml-1">{{ d.label }}</span>
+          <span class="text-body-large font-weight-medium ml-1">{{ d.label }}</span>
         </div>
         <v-row
           v-if="local[d.key]"

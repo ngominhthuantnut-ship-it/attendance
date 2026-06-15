@@ -15,7 +15,7 @@ async function copy(): Promise<void> {
 
 <template>
   <v-card variant="outlined">
-    <v-card-title class="text-body-1">
+    <v-card-title class="text-body-large">
       Link cho phụ huynh
     </v-card-title>
     <v-card-text>

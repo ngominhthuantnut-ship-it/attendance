@@ -67,12 +67,12 @@ function update(idx: number, patch: Partial<RateEntry>): void {
     >
       Thêm thay đổi giá
     </v-btn>
-    <p class="text-caption mt-2 text-medium-emphasis">
+    <p class="text-body-small mt-2 text-medium-emphasis">
       Buổi học ngày D dùng đơn giá có "Áp dụng từ" ≤ D mới nhất.
     </p>
     <p
-      v-if="sorted[0]"
-      class="text-caption"
+      v-if="sorted[0] && sorted[0].effectiveFrom"
+      class="text-body-small"
     >
       Hiện tại (từ {{ formatVnDate(sorted[0]!.effectiveFrom) }}):
       <strong>{{ sorted[0]!.rate.toLocaleString("vi-VN") }} đ/buổi</strong>

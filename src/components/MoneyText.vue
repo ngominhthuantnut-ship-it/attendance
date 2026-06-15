@@ -6,5 +6,5 @@ const text = computed(() => formatVnd(props.value));
 </script>
 
 <template>
-  <span>{{ text }}</span>
+  <span class="tnum">{{ text }}</span>
 </template>

@@ -62,7 +62,7 @@ async function signIn(): Promise<void> {
         md="4"
       >
         <v-card class="pa-6">
-          <v-card-title class="text-h5 text-center">
+          <v-card-title class="text-headline-medium text-center">
             Quản lý điểm danh
           </v-card-title>
           <v-card-text>
@@ -80,7 +80,7 @@ async function signIn(): Promise<void> {
             >
               {{ error }}
             </v-alert>
-            <p class="text-body-2 mb-4">
+            <p class="text-body-medium mb-4">
               Đăng nhập bằng tài khoản Google của giáo viên để bắt đầu.
             </p>
             <v-btn

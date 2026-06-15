@@ -30,10 +30,10 @@ void props.token;
 <template>
   <div v-if="parent.student && parent.cls && result">
     <v-card class="pa-4">
-      <h2 class="text-h6 text-center">
+      <h2 class="text-headline-small text-center">
         HOÁ ĐƠN HỌC PHÍ
       </h2>
-      <p class="text-center text-body-2">
+      <p class="text-center text-body-medium">
         {{ monthLabel }}
       </p>
       <v-divider class="my-3" />
@@ -107,7 +107,7 @@ void props.token;
       </div>
       <p
         v-if="result.paidInfo?.note"
-        class="mt-2 text-body-2"
+        class="mt-2 text-body-medium"
       >
         Ghi chú: {{ result.paidInfo.note }}
       </p>

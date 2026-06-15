@@ -56,16 +56,11 @@ export const useMonthsStore = defineStore("months", () => {
     const now = serverTimestamp();
     for (const m of marks) {
       const ref = doc(db, "students", m.studentId, "months", ym);
-      const data: Partial<MonthDoc> & Record<string, unknown> = {
-        month: ym,
-        classId,
-        [`attendance.${date}.status`]: m.status,
-        [`attendance.${date}.markedAt`]: now,
-      };
-      if (m.note !== undefined) {
-        data[`attendance.${date}.note`] = m.note;
-      }
-      batch.set(ref, data, { merge: true });
+      const mark: Record<string, unknown> = { status: m.status, markedAt: now };
+      if (m.note !== undefined) mark.note = m.note;
+      // Nested object + merge: dot-path keys are NOT interpreted by set(), only by update();
+      // a nested map merges deeply so sibling dates in `attendance` are preserved.
+      batch.set(ref, { month: ym, classId, attendance: { [date]: mark } }, { merge: true });
       cache.delete(key(m.studentId, ym));
     }
     await batch.commit();

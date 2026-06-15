@@ -1,0 +1,49 @@
+/* Global app styling layered on top of Vuetify's MD3 theme. */
+
+.v-application {
+  font-family: "Be Vietnam Pro", "Roboto", system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tabular figures for money/number columns to prevent jitter. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Subtle, app-wide custom scrollbar (desktop). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--v-theme-outline-variant, 203 213 225)) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(100, 116, 139, 0.35);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(100, 116, 139, 0.55);
+}
+
+/* Smooth, consistent hover transitions for interactive surfaces. */
+.v-card,
+.v-btn,
+.v-list-item {
+  transition:
+    box-shadow 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v-card,
+  .v-btn,
+  .v-list-item {
+    transition: none;
+  }
+}

@@ -1,10 +1,14 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
+import { useDisplay } from "vuetify";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 const router = useRouter();
 const auth = useAuthStore();
+const { mobile } = useDisplay();
+
+const drawer = ref(!mobile.value);
 
 const nav = [
   { title: "Tổng quan", to: "/admin", icon: "mdi-view-dashboard-outline", exact: true },
@@ -14,7 +18,6 @@ const nav = [
   { title: "Cài đặt", to: "/admin/settings", icon: "mdi-cog-outline", exact: false },
 ];
 
-// Tên người đang đăng nhập (chủ hoặc admin phụ), không phải tên chủ trong config.
 const displayName = computed(() => auth.displayName ?? auth.email ?? "Giáo viên");
 const initials = computed(() =>
   displayName.value
@@ -25,6 +28,10 @@ const initials = computed(() =>
     .join(""),
 );
 
+function onNavigate(): void {
+  if (mobile.value) drawer.value = false;
+}
+
 async function logout(): Promise<void> {
   await auth.signOut();
   await router.push({ name: "admin-login" });
@@ -33,8 +40,26 @@ async function logout(): Promise<void> {
 
 <template>
   <v-app>
+    <v-app-bar
+      v-if="mobile"
+      flat
+      color="surface"
+      border="b"
+    >
+      <v-app-bar-nav-icon @click="drawer = !drawer" />
+      <v-app-bar-title class="d-flex align-center ga-2">
+        <v-icon
+          icon="mdi-notebook-check-outline"
+          color="primary"
+        />
+        <span class="text-title-medium font-weight-bold">Điểm danh</span>
+      </v-app-bar-title>
+    </v-app-bar>
+
     <v-navigation-drawer
-      permanent
+      v-model="drawer"
+      :permanent="!mobile"
+      :temporary="mobile"
       color="surface"
       width="264"
     >
@@ -68,6 +93,7 @@ async function logout(): Promise<void> {
           rounded="lg"
           color="primary"
           class="mb-1"
+          @click="onNavigate"
         />
       </v-list>
 

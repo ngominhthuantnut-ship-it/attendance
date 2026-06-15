@@ -33,6 +33,11 @@ const adminRoutes: RouteRecordRaw[] = [
 
 const parentRoutes: RouteRecordRaw[] = [
   {
+    path: "/tra-cuu",
+    name: "parent-lookup",
+    component: () => import("@/pages/parent/ParentLookupPage.vue"),
+  },
+  {
     path: "/p/:token",
     component: () => import("@/layouts/ParentLayout.vue"),
     props: true,

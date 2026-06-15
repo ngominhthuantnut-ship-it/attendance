@@ -72,5 +72,12 @@ service cloud.firestore {
       allow list: if false;
       allow create, update, delete: if isTeacher();
     }
+
+    // Mã tra cứu ngắn → trỏ tới token học sinh. Phụ huynh get-by-code, không list.
+    match /studentCodes/{code} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update, delete: if isTeacher();
+    }
   }
 }

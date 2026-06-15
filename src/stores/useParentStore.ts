@@ -70,5 +70,14 @@ export const useParentStore = defineStore("parent", () => {
     return snap.exists() ? (snap.data() as MonthDoc) : null;
   }
 
-  return { cachedLink, student, cls, loading, error, loadByToken, getMonth };
+  /** Tra cứu mã học sinh → trả về parentLinkToken (hoặc null nếu mã sai). */
+  async function resolveCode(code: string): Promise<string | null> {
+    const id = code.trim().toUpperCase();
+    if (!id) return null;
+    const snap = await getDoc(doc(db, "studentCodes", id));
+    if (!snap.exists()) return null;
+    return (snap.data() as { token?: string }).token ?? null;
+  }
+
+  return { cachedLink, student, cls, loading, error, loadByToken, getMonth, resolveCode };
 });

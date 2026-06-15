@@ -45,7 +45,12 @@ const confirmDelete = ref<{ open: boolean; student: Student | null }>({
   open: false,
   student: null,
 });
-const showLinkFor = ref<string | null>(null);
+const showLinkFor = ref<{ token: string; code: string } | null>(null);
+
+async function openLink(s: Student): Promise<void> {
+  const code = await students.ensureLookupCode(s);
+  showLinkFor.value = { token: s.parentLinkToken, code };
+}
 const month = ref(monthOf(todayISO()));
 const today = todayISO();
 
@@ -737,7 +742,7 @@ async function saveMakeup(): Promise<void> {
                     icon="mdi-link-variant"
                     variant="text"
                     size="small"
-                    @click.stop="showLinkFor = s.parentLinkToken"
+                    @click.stop="openLink(s)"
                   />
                   <v-btn
                     icon="mdi-pencil"
@@ -787,7 +792,8 @@ async function saveMakeup(): Promise<void> {
     >
       <ParentLinkCard
         v-if="showLinkFor"
-        :token="showLinkFor"
+        :token="showLinkFor.token"
+        :code="showLinkFor.code"
       />
     </v-dialog>
 

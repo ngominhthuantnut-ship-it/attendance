@@ -37,6 +37,10 @@ async function reload(): Promise<void> {
   student.value = await students.get(props.studentId);
   if (student.value) {
     cls.value = await classes.get(student.value.classId);
+    if (!student.value.lookupCode) {
+      const code = await students.ensureLookupCode(student.value);
+      student.value = { ...student.value, lookupCode: code };
+    }
   }
 }
 onMounted(reload);
@@ -120,7 +124,10 @@ async function unmarkPaid(): Promise<void> {
         cols="12"
         md="4"
       >
-        <ParentLinkCard :token="student.parentLinkToken" />
+        <ParentLinkCard
+          :token="student.parentLinkToken"
+          :code="student.lookupCode"
+        />
       </v-col>
       <v-col
         cols="12"

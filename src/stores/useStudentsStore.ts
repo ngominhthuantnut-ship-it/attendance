@@ -14,7 +14,7 @@ import {
 } from "firebase/firestore";
 import { getFirebase } from "@/services/firebase";
 import type { Student, StudentStatus } from "@/types";
-import { generateParentToken } from "@/lib/tokens";
+import { generateParentToken, generateLookupCode } from "@/lib/tokens";
 import { TTLCache } from "@/composables/useCachedFetch";
 
 const TTL = 60_000;
@@ -64,15 +64,26 @@ export const useStudentsStore = defineStore("students", () => {
     return s;
   }
 
+  async function uniqueLookupCode(): Promise<string> {
+    for (let i = 0; i < 6; i++) {
+      const code = generateLookupCode();
+      const snap = await getDoc(doc(db, "studentCodes", code));
+      if (!snap.exists()) return code;
+    }
+    return `${generateLookupCode()}${generateLookupCode().slice(0, 2)}`;
+  }
+
   async function create(
     id: string,
     data: Omit<Student, "id" | "parentLinkToken">,
   ): Promise<string> {
     const token = generateParentToken();
+    const code = await uniqueLookupCode();
     const batch = writeBatch(db);
     batch.set(doc(db, "students", id), {
       ...data,
       parentLinkToken: token,
+      lookupCode: code,
       createdAt: serverTimestamp(),
     });
     batch.set(doc(db, "parentLinks", token), {
@@ -80,9 +91,30 @@ export const useStudentsStore = defineStore("students", () => {
       classId: data.classId,
       createdAt: serverTimestamp(),
     });
+    batch.set(doc(db, "studentCodes", code), {
+      studentId: id,
+      token,
+      createdAt: serverTimestamp(),
+    });
     await batch.commit();
     invalidate(id, data.classId);
     return token;
+  }
+
+  /** Đảm bảo học sinh có mã tra cứu (backfill cho học sinh tạo trước đây). */
+  async function ensureLookupCode(student: Student): Promise<string> {
+    if (student.lookupCode) return student.lookupCode;
+    const code = await uniqueLookupCode();
+    const batch = writeBatch(db);
+    batch.update(doc(db, "students", student.id), { lookupCode: code });
+    batch.set(doc(db, "studentCodes", code), {
+      studentId: student.id,
+      token: student.parentLinkToken,
+      createdAt: serverTimestamp(),
+    });
+    await batch.commit();
+    invalidate(student.id, student.classId);
+    return code;
   }
 
   async function update(id: string, patch: Partial<Student>): Promise<void> {
@@ -98,6 +130,7 @@ export const useStudentsStore = defineStore("students", () => {
     const batch = writeBatch(db);
     batch.delete(doc(db, "students", id));
     batch.delete(doc(db, "parentLinks", student.parentLinkToken));
+    if (student.lookupCode) batch.delete(doc(db, "studentCodes", student.lookupCode));
     const monthsSnap = await getDocs(collection(db, "students", id, "months"));
     for (const m of monthsSnap.docs) batch.delete(m.ref);
     await batch.commit();
@@ -112,5 +145,5 @@ export const useStudentsStore = defineStore("students", () => {
     }
   }
 
-  return { loading, error, listByClass, get, create, update, remove, invalidate };
+  return { loading, error, listByClass, get, create, update, remove, ensureLookupCode, invalidate };
 });

@@ -13,5 +13,7 @@ export interface Student {
   endDate: DateISO | null;
   notes: string;
   parentLinkToken: string;
+  /** Mã tra cứu ngắn để phụ huynh nhập ở trang tra cứu chung. */
+  lookupCode?: string;
   status: StudentStatus;
 }

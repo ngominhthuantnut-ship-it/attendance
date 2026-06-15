@@ -275,3 +275,30 @@ describe("parentLinks", () => {
     await assertFails(getDocs(collection(anonDb(), "parentLinks")));
   });
 });
+
+describe("studentCodes", () => {
+  beforeEach(async () => seedConfig());
+
+  it("teacher creates a lookup code mapping", async () => {
+    await assertSucceeds(
+      setDoc(doc(teacherDb(), "studentCodes/ABC234"), { studentId: "s1", token: "tok-abc" }),
+    );
+  });
+
+  it("non-teacher cannot create", async () => {
+    await assertFails(
+      setDoc(doc(otherDb(), "studentCodes/ABC234"), { studentId: "s1", token: "tok-abc" }),
+    );
+  });
+
+  it("anon gets a code mapping by id (lookup flow)", async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "studentCodes/ABC234"), { studentId: "s1", token: "tok-abc" });
+    });
+    await assertSucceeds(getDoc(doc(anonDb(), "studentCodes/ABC234")));
+  });
+
+  it("anon cannot list studentCodes (no enumeration)", async () => {
+    await assertFails(getDocs(collection(anonDb(), "studentCodes")));
+  });
+});

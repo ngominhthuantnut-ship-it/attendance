@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { parentLinkUrl } from "@/services/parentLinkUrl";
+import { parentLinkUrl, parentLookupUrl } from "@/services/parentLinkUrl";
 
-const props = defineProps<{ token: string }>();
-const url = computed(() => parentLinkUrl(props.token));
-const copied = ref(false);
+const props = defineProps<{ token: string; code?: string }>();
 
-async function copy(): Promise<void> {
-  await navigator.clipboard.writeText(url.value);
-  copied.value = true;
-  setTimeout(() => (copied.value = false), 1500);
+const directUrl = computed(() => parentLinkUrl(props.token));
+const lookupUrl = computed(() => parentLookupUrl());
+const copiedKey = ref<string | null>(null);
+
+async function copy(text: string, key: string): Promise<void> {
+  await navigator.clipboard.writeText(text);
+  copiedKey.value = key;
+  setTimeout(() => (copiedKey.value = null), 1500);
 }
 </script>
 
@@ -25,44 +27,92 @@ async function copy(): Promise<void> {
           variant="tonal"
           rounded="lg"
         >
-          <v-icon icon="mdi-link-variant" />
+          <v-icon icon="mdi-share-variant" />
         </v-avatar>
       </template>
       <v-card-title class="text-title-medium">
-        Link cho phụ huynh
+        Chia sẻ cho phụ huynh
       </v-card-title>
-      <v-card-subtitle>Gửi link này để phụ huynh xem điểm danh & học phí</v-card-subtitle>
+      <v-card-subtitle>Gửi link chung + mã, hoặc link riêng của học sinh</v-card-subtitle>
     </v-card-item>
-    <v-card-text>
-      <v-text-field
-        :model-value="url"
-        readonly
-        variant="outlined"
-        density="comfortable"
-        hide-details
-      >
-        <template #append-inner>
+    <v-divider />
+
+    <v-card-text class="d-flex flex-column ga-5">
+      <div v-if="code">
+        <div class="text-body-small text-medium-emphasis mb-2">
+          Mã tra cứu (cấp riêng cho phụ huynh)
+        </div>
+        <div class="d-flex align-center ga-2">
+          <v-chip
+            color="primary"
+            variant="tonal"
+            size="large"
+            class="font-weight-bold text-title-large code-chip"
+          >
+            {{ code }}
+          </v-chip>
           <v-btn
-            :icon="copied ? 'mdi-check' : 'mdi-content-copy'"
-            :color="copied ? 'success' : 'primary'"
+            :icon="copiedKey === 'code' ? 'mdi-check' : 'mdi-content-copy'"
+            :color="copiedKey === 'code' ? 'success' : 'primary'"
             variant="text"
             size="small"
-            title="Copy link"
-            @click="copy"
+            title="Copy mã"
+            @click="copy(code, 'code')"
           />
-        </template>
-      </v-text-field>
+        </div>
+      </div>
+
+      <div>
+        <div class="text-body-small text-medium-emphasis mb-1">
+          Link tra cứu chung (gửi cả nhóm phụ huynh)
+        </div>
+        <v-text-field
+          :model-value="lookupUrl"
+          readonly
+          variant="outlined"
+          density="comfortable"
+          hide-details
+        >
+          <template #append-inner>
+            <v-btn
+              :icon="copiedKey === 'lookup' ? 'mdi-check' : 'mdi-content-copy'"
+              :color="copiedKey === 'lookup' ? 'success' : 'primary'"
+              variant="text"
+              size="small"
+              @click="copy(lookupUrl, 'lookup')"
+            />
+          </template>
+        </v-text-field>
+      </div>
+
+      <div>
+        <div class="text-body-small text-medium-emphasis mb-1">
+          Link riêng của học sinh (không cần nhập mã)
+        </div>
+        <v-text-field
+          :model-value="directUrl"
+          readonly
+          variant="outlined"
+          density="comfortable"
+          hide-details
+        >
+          <template #append-inner>
+            <v-btn
+              :icon="copiedKey === 'direct' ? 'mdi-check' : 'mdi-content-copy'"
+              :color="copiedKey === 'direct' ? 'success' : 'primary'"
+              variant="text"
+              size="small"
+              @click="copy(directUrl, 'direct')"
+            />
+          </template>
+        </v-text-field>
+      </div>
     </v-card-text>
-    <v-card-actions>
-      <v-spacer />
-      <v-btn
-        prepend-icon="mdi-content-copy"
-        variant="flat"
-        :color="copied ? 'success' : 'primary'"
-        @click="copy"
-      >
-        {{ copied ? "Đã copy" : "Copy link" }}
-      </v-btn>
-    </v-card-actions>
   </v-card>
 </template>
+
+<style scoped>
+.code-chip {
+  letter-spacing: 0.18em;
+}
+</style>

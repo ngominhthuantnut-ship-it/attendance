@@ -1,11 +1,6 @@
 {
   "name": "attendance",
   "version": "0.0.0",
-  "description": "",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
   "scripts": {
     "test": "vitest run",
     "dev": "vite",
@@ -15,9 +10,6 @@
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint 'src/**/*.{ts,vue}' --max-warnings 0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "type": "module",
   "private": true,
   "dependencies": {

@@ -52,6 +52,17 @@ const session = computed(() => {
 
 const markedCount = computed(() => Object.values(status.value).filter((v) => v !== "unmarked").length);
 
+const expandedNotes = ref<Set<string>>(new Set());
+function toggleNote(id: string): void {
+  const next = new Set(expandedNotes.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  expandedNotes.value = next;
+}
+function hasNote(id: string): boolean {
+  return !isEmptyHtml(notes.value[id] ?? "");
+}
+
 const snackbar = ref(false);
 const snackbarText = ref("");
 const snackbarColor = ref<"success" | "error">("success");
@@ -226,11 +237,25 @@ function shiftDate(delta: number): void {
               </v-btn>
             </v-btn-toggle>
           </div>
-          <RichTextEditor
-            v-model="notes[s.id]"
-            placeholder="Ghi chú / nhận xét (tuỳ chọn)…"
-            class="mt-3"
-          />
+          <div class="mt-2">
+            <v-btn
+              variant="text"
+              size="small"
+              :color="hasNote(s.id) ? 'primary' : undefined"
+              :prepend-icon="expandedNotes.has(s.id) ? 'mdi-chevron-up' : (hasNote(s.id) ? 'mdi-note-edit-outline' : 'mdi-note-plus-outline')"
+              @click="toggleNote(s.id)"
+            >
+              {{ expandedNotes.has(s.id) ? 'Thu gọn ghi chú' : (hasNote(s.id) ? 'Sửa ghi chú' : 'Thêm ghi chú') }}
+            </v-btn>
+            <v-expand-transition>
+              <RichTextEditor
+                v-if="expandedNotes.has(s.id)"
+                v-model="notes[s.id]"
+                placeholder="Ghi chú / nhận xét (tuỳ chọn)…"
+                class="mt-2"
+              />
+            </v-expand-transition>
+          </div>
         </div>
       </template>
     </v-card>

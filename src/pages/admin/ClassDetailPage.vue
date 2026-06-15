@@ -11,6 +11,12 @@ import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import ParentLinkCard from "@/components/ParentLinkCard.vue";
 import MoneyText from "@/components/MoneyText.vue";
+import {
+  downloadStudentTemplate,
+  readStudentRows,
+  rowsToStudents,
+  dedupKey,
+} from "@/lib/studentExcel";
 import { expandSchedule, type Session } from "@/composables/useScheduleCompute";
 import {
   formatVnDate,
@@ -187,6 +193,60 @@ async function doDelete(): Promise<void> {
 function openEdit(s: Student): void {
   editingStudent.value = s;
   showStudentForm.value = true;
+}
+
+const importing = ref(false);
+const importInput = ref<HTMLInputElement | null>(null);
+const importMsg = ref<{ open: boolean; text: string; color: "success" | "error" }>({
+  open: false,
+  text: "",
+  color: "success",
+});
+
+function triggerImport(): void {
+  importInput.value?.click();
+}
+
+async function onImportFile(e: Event): Promise<void> {
+  const input = e.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = ""; // cho phép chọn lại cùng file
+  if (!file || !cls.value) return;
+  importing.value = true;
+  try {
+    const rows = await readStudentRows(file);
+    const { students: imported, skipped } = rowsToStudents(rows, cls.value.startDate);
+    const existing = new Map<string, string>(
+      studentList.value.map((s) => [dedupKey(s.name, s.parentPhone, s.parentName), s.id]),
+    );
+    let inserted = 0;
+    let updated = 0;
+    for (const imp of imported) {
+      const data = { ...imp, classId: props.classId, status: "active" as const };
+      const key = dedupKey(imp.name, imp.parentPhone, imp.parentName);
+      const id = existing.get(key);
+      if (id) {
+        await students.update(id, data);
+        updated += 1;
+      } else {
+        const newId = crypto.randomUUID();
+        await students.create(newId, data);
+        existing.set(key, newId);
+        inserted += 1;
+      }
+    }
+    await reload();
+    importMsg.value = {
+      open: true,
+      color: "success",
+      text: `Đã nhập: thêm ${inserted}, cập nhật ${updated}${skipped ? `, bỏ qua ${skipped} dòng thiếu họ tên` : ""}.`,
+    };
+  } catch (err) {
+    console.error(err);
+    importMsg.value = { open: true, color: "error", text: "Đọc file thất bại. Kiểm tra đúng định dạng file mẫu." };
+  } finally {
+    importing.value = false;
+  }
 }
 
 function openCreate(): void {
@@ -560,7 +620,30 @@ async function saveMakeup(): Promise<void> {
       </v-window-item>
 
       <v-window-item value="students">
-        <div class="d-flex align-center mb-3">
+        <input
+          ref="importInput"
+          type="file"
+          accept=".xlsx,.xls"
+          class="d-none"
+          @change="onImportFile"
+        >
+        <div class="d-flex flex-wrap align-center ga-2 mb-3">
+          <v-btn
+            variant="tonal"
+            prepend-icon="mdi-file-download-outline"
+            @click="downloadStudentTemplate"
+          >
+            Tải file mẫu
+          </v-btn>
+          <v-btn
+            variant="tonal"
+            color="primary"
+            prepend-icon="mdi-file-upload-outline"
+            :loading="importing"
+            @click="triggerImport"
+          >
+            Nhập từ Excel
+          </v-btn>
           <v-spacer />
           <v-btn
             color="primary"
@@ -729,6 +812,15 @@ async function saveMakeup(): Promise<void> {
       location="bottom"
     >
       {{ snackbarText }}
+    </v-snackbar>
+
+    <v-snackbar
+      v-model="importMsg.open"
+      :timeout="6000"
+      :color="importMsg.color"
+      location="bottom"
+    >
+      {{ importMsg.text }}
     </v-snackbar>
   </div>
 </template>

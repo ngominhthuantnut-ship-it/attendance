@@ -1,8 +1,54 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{db}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+
+    function configRef() {
+      return /databases/$(db)/documents/meta/config;
+    }
+    function isTeacher() {
+      return request.auth != null
+          && exists(configRef())
+          && request.auth.uid == get(configRef()).data.teacherUid;
+    }
+    function isBootstrap() {
+      return request.auth != null
+          && !exists(configRef())
+          && request.auth.token.email == 'dang.nh.aprotrain@gmail.com'
+          && request.auth.token.email_verified == true;
+    }
+
+    match /meta/config {
+      allow get: if true;
+      allow list: if false;
+      allow create: if isBootstrap()
+                  && request.resource.data.teacherUid == request.auth.uid;
+      allow update: if isTeacher()
+                  && request.resource.data.teacherUid == resource.data.teacherUid;
+      allow delete: if false;
+    }
+
+    match /classes/{classId} {
+      allow get: if true;
+      allow list: if isTeacher();
+      allow create, update, delete: if isTeacher();
+    }
+
+    match /students/{studentId} {
+      allow get: if true;
+      allow list: if isTeacher();
+      allow create, update, delete: if isTeacher();
+
+      match /months/{monthId} {
+        allow get: if true;
+        allow list: if isTeacher();
+        allow create, update, delete: if isTeacher();
+      }
+    }
+
+    match /parentLinks/{token} {
+      allow get: if true;
+      allow list: if false;
+      allow create, update, delete: if isTeacher();
     }
   }
 }

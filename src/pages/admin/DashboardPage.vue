@@ -2,18 +2,25 @@
 import { ref, onMounted } from "vue";
 import { useClassesStore } from "@/stores/useClassesStore";
 import { useStudentsStore } from "@/stores/useStudentsStore";
-import type { Class } from "@/types";
-import { todayISO, dayKeyOf, formatVnDate, compareDate } from "@/lib/dates";
+import { expandSchedule } from "@/composables/useScheduleCompute";
+import { todayISO, formatVnDate, compareDate } from "@/lib/dates";
 import PageHeader from "@/components/PageHeader.vue";
 import EmptyState from "@/components/EmptyState.vue";
+
+interface TodaySession {
+  classId: string;
+  className: string;
+  start: string;
+  end: string;
+  source: "weekly" | "added";
+}
 
 const classes = useClassesStore();
 const students = useStudentsStore();
 const today = todayISO();
-const todayKey = dayKeyOf(today);
 const classCount = ref(0);
 const studentCount = ref(0);
-const todaysClasses = ref<Class[]>([]);
+const todaySessions = ref<TodaySession[]>([]);
 
 onMounted(async () => {
   const all = await classes.list("active");
@@ -21,13 +28,17 @@ onMounted(async () => {
   const ongoing = all.filter((c) => compareDate(c.endDate, today) >= 0);
   classCount.value = ongoing.length;
   let total = 0;
+  const sessions: TodaySession[] = [];
   for (const c of ongoing) {
     const list = await students.listByClass(c.id, "active");
     total += list.length;
-    if (c.weeklySchedule[todayKey] && !c.excludedDates.includes(today)) {
-      todaysClasses.value.push(c);
+    // expandSchedule xử lý đúng lịch tuần + buổi bù + buổi đã huỷ trong ngày hôm nay.
+    for (const s of expandSchedule({ cls: c, from: today, to: today })) {
+      sessions.push({ classId: c.id, className: c.name, start: s.start, end: s.end, source: s.source });
     }
   }
+  sessions.sort((a, b) => a.start.localeCompare(b.start));
+  todaySessions.value = sessions;
   studentCount.value = total;
 });
 </script>
@@ -92,33 +103,75 @@ onMounted(async () => {
       </v-col>
     </v-row>
 
-    <h2 class="text-title-large font-weight-bold mt-8 mb-3">
-      Buổi học hôm nay
-    </h2>
-    <v-card>
+    <div class="d-flex align-center ga-2 mt-8 mb-3">
+      <h2 class="text-title-large font-weight-bold">
+        Lịch dạy hôm nay
+      </h2>
+      <v-chip
+        v-if="todaySessions.length"
+        size="small"
+        color="primary"
+        variant="tonal"
+      >
+        {{ todaySessions.length }} buổi
+      </v-chip>
+    </div>
+
+    <v-card class="pa-2 pa-sm-4">
       <EmptyState
-        v-if="todaysClasses.length === 0"
-        title="Hôm nay không có buổi học"
-        subtitle="Các lớp có lịch học hôm nay sẽ hiện ở đây."
+        v-if="todaySessions.length === 0"
+        title="Hôm nay không có buổi dạy"
+        subtitle="Các buổi học trong ngày hôm nay sẽ hiện ở đây theo khung giờ."
         icon="mdi-calendar-blank-outline"
       />
-      <v-list
+      <v-timeline
         v-else
-        lines="one"
+        side="end"
+        align="start"
+        density="comfortable"
+        truncate-line="both"
       >
-        <template
-          v-for="(c, i) in todaysClasses"
-          :key="c.id"
+        <v-timeline-item
+          v-for="(s, i) in todaySessions"
+          :key="i"
+          dot-color="primary"
+          icon="mdi-clock-outline"
+          size="small"
         >
-          <v-divider v-if="i > 0" />
-          <v-list-item
-            :title="c.name"
-            :to="{ name: 'admin-attendance', params: { classId: c.id, date: today } }"
-            prepend-icon="mdi-calendar-check-outline"
-            append-icon="mdi-chevron-right"
-          />
-        </template>
-      </v-list>
+          <template #opposite>
+            <span class="text-body-large font-weight-bold tnum">{{ s.start }}</span>
+          </template>
+          <v-card
+            border
+            rounded="lg"
+            :to="{ name: 'admin-attendance', params: { classId: s.classId, date: today } }"
+          >
+            <div class="pa-3 d-flex align-center justify-space-between ga-3">
+              <div>
+                <div class="font-weight-medium">
+                  {{ s.className }}
+                  <v-chip
+                    v-if="s.source === 'added'"
+                    size="x-small"
+                    color="secondary"
+                    variant="tonal"
+                    class="ml-1"
+                  >
+                    Bù
+                  </v-chip>
+                </div>
+                <div class="text-body-small text-medium-emphasis tnum">
+                  {{ s.start }} – {{ s.end }}
+                </div>
+              </div>
+              <v-icon
+                icon="mdi-chevron-right"
+                class="text-medium-emphasis"
+              />
+            </div>
+          </v-card>
+        </v-timeline-item>
+      </v-timeline>
     </v-card>
   </div>
 </template>

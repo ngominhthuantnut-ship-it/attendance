@@ -48,10 +48,11 @@ const applied = ref<{ name: string; classId: string | null; phone: string; statu
   status: "all",
 });
 
-const classOptions = computed(() => [
-  { title: "Tất cả lớp", value: null as string | null },
-  ...classList.value.map((c) => ({ title: c.name, value: c.id })),
-]);
+const classOptions = computed(() =>
+  classList.value.map((c) => ({ title: c.name, value: c.id as string | null })),
+);
+// Bắt đầu chưa tải gì — phải chọn lớp & bấm Tìm kiếm (tiết kiệm reads).
+const hasSearched = ref(false);
 const statusOptions = [
   { title: "Tất cả", value: "all" },
   { title: "Đã thu", value: "paid" },
@@ -59,20 +60,18 @@ const statusOptions = [
 ];
 
 async function load(): Promise<void> {
-  loading.value = true;
+  const classId = applied.value.classId;
   rows.value = [];
+  if (!classId) return; // chưa chọn lớp → không đọc gì
+  const cls = classList.value.find((c) => c.id === classId);
+  if (!cls) return;
+  loading.value = true;
   try {
-    // Lọc chính theo Lớp ở tầng DB: chỉ tải học sinh của lớp được chọn.
-    const clsList = applied.value.classId
-      ? classList.value.filter((c) => c.id === applied.value.classId)
-      : classList.value;
-    for (const cls of clsList) {
-      const stuList = await students.listByClass(cls.id, "active");
-      for (const stu of stuList) {
-        const md = await months.get(stu.id, month.value, false);
-        const r = computeMonth({ cls, student: stu, monthDoc: md, yearMonth: month.value });
-        rows.value.push({ student: stu, cls, confirmed: r.totals.confirmedAmount, status: r.paymentStatus });
-      }
+    const stuList = await students.listByClass(cls.id, "active");
+    for (const stu of stuList) {
+      const md = await months.get(stu.id, month.value, false);
+      const r = computeMonth({ cls, student: stu, monthDoc: md, yearMonth: month.value });
+      rows.value.push({ student: stu, cls, confirmed: r.totals.confirmedAmount, status: r.paymentStatus });
     }
   } finally {
     loading.value = false;
@@ -81,12 +80,16 @@ async function load(): Promise<void> {
 
 onMounted(async () => {
   classList.value = await classes.list("active");
-  await load();
 });
-watch(month, load);
+// Đổi tháng chỉ tải lại nếu đã chọn lớp & đã tìm.
+watch(month, () => {
+  if (hasSearched.value && applied.value.classId) void load();
+});
 
 function runSearch(): void {
+  if (!draft.classId) return;
   applied.value = { ...draft };
+  hasSearched.value = true;
   void load();
 }
 
@@ -96,7 +99,8 @@ function clearFilter(): void {
   draft.phone = "";
   draft.status = "all";
   applied.value = { ...draft };
-  void load();
+  hasSearched.value = false;
+  rows.value = [];
 }
 
 // name/phone/status lọc trong tập đã tải.
@@ -141,7 +145,7 @@ const filterSummary = computed(() => {
   if (f.status === "unpaid") parts.push("Chưa thu");
   if (f.name.trim()) parts.push(`Tên: ${f.name.trim()}`);
   if (f.phone.trim()) parts.push(`SĐT: ${f.phone.trim()}`);
-  return parts.length ? parts.join(" · ") : "Tất cả học sinh";
+  return parts.length ? parts.join(" · ") : "Chưa chọn lớp";
 });
 
 function openStudent(_e: unknown, row: { item: { id: string } }): void {
@@ -248,7 +252,8 @@ async function doToggle(): Promise<void> {
                 <v-select
                   v-model="draft.classId"
                   :items="classOptions"
-                  label="Lớp"
+                  label="Lớp *"
+                  placeholder="Chọn lớp"
                   prepend-inner-icon="mdi-google-classroom"
                   hide-details
                 />
@@ -293,6 +298,7 @@ async function doToggle(): Promise<void> {
                 variant="flat"
                 prepend-icon="mdi-magnify"
                 :loading="loading"
+                :disabled="!draft.classId"
                 @click="runSearch"
               >
                 Tìm kiếm
@@ -303,7 +309,7 @@ async function doToggle(): Promise<void> {
       </v-expand-transition>
     </v-card>
 
-    <v-row v-if="!loading && filteredRows.length">
+    <v-row v-if="hasSearched && !loading && filteredRows.length">
       <v-col
         cols="12"
         sm="6"
@@ -341,8 +347,23 @@ async function doToggle(): Promise<void> {
         color="primary"
       />
       <EmptyState
+        v-else-if="!hasSearched"
+        title="Chọn lớp để xem học phí"
+        subtitle="Mở bộ lọc, chọn một lớp rồi bấm Tìm kiếm. Học phí chỉ tải khi bạn chọn lớp (tiết kiệm dữ liệu)."
+        icon="mdi-magnify"
+      >
+        <v-btn
+          color="primary"
+          variant="flat"
+          prepend-icon="mdi-filter-variant"
+          @click="filterOpen = true"
+        >
+          Mở bộ lọc
+        </v-btn>
+      </EmptyState>
+      <EmptyState
         v-else-if="rows.length === 0"
-        title="Chưa có dữ liệu học phí"
+        title="Lớp này chưa có học sinh / dữ liệu"
         subtitle="Chọn tháng khác hoặc thêm học sinh vào lớp."
         icon="mdi-cash-remove"
       />

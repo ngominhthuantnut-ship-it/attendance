@@ -47,66 +47,127 @@ const dayLabel = computed(() => {
   return Object.keys(parent.cls.weeklySchedule).map((k) => labels[k]).join(", ");
 });
 
+const initial = computed(() => parent.student?.name.trim().slice(0, 1).toUpperCase() ?? "?");
+const monthLabel = computed(() => {
+  const [y, m] = monthYM.split("-");
+  return `tháng ${Number(m)}/${y}`;
+});
+
 void props;
 </script>
 
 <template>
-  <div v-if="parent.student && parent.cls">
+  <div
+    v-if="parent.student && parent.cls"
+    class="mx-auto"
+    style="max-width: 560px;"
+  >
+    <!-- Hero: học sinh -->
     <v-card
-      class="pa-4 mb-3"
-      variant="tonal"
       color="primary"
+      variant="flat"
+      rounded="xl"
+      class="text-white pa-5 mb-4"
     >
-      <p class="text-body-medium">
-        Học sinh
-      </p>
-      <p class="text-headline-medium mb-2">
-        {{ parent.student.name }}
-      </p>
-      <p class="text-body-medium">
-        Lớp <strong>{{ parent.cls.name }}</strong>
-      </p>
-      <p class="text-body-medium">
-        Lịch học: {{ dayLabel }}
-      </p>
-      <p class="text-body-small text-medium-emphasis">
-        {{ formatVnDate(parent.cls.startDate) }} – {{ formatVnDate(parent.cls.endDate) }}
-      </p>
+      <div class="d-flex align-center ga-4">
+        <v-avatar
+          size="56"
+          color="white"
+        >
+          <span class="text-title-large font-weight-bold text-primary">{{ initial }}</span>
+        </v-avatar>
+        <div class="flex-grow-1">
+          <div class="text-title-medium font-weight-bold">
+            {{ parent.student.name }}
+          </div>
+          <v-chip
+            size="small"
+            color="white"
+            variant="flat"
+            class="text-primary font-weight-medium mt-1"
+          >
+            {{ parent.cls.name }}
+          </v-chip>
+        </div>
+      </div>
+      <div
+        class="mt-4 d-flex flex-column ga-2 text-body-medium"
+        style="opacity: 0.95;"
+      >
+        <div class="d-flex align-center ga-2">
+          <v-icon
+            icon="mdi-calendar-week"
+            size="small"
+          />
+          Lịch học: {{ dayLabel || "—" }}
+        </div>
+        <div class="d-flex align-center ga-2">
+          <v-icon
+            icon="mdi-calendar-range"
+            size="small"
+          />
+          {{ formatVnDate(parent.cls.startDate) }} – {{ formatVnDate(parent.cls.endDate) }}
+        </div>
+      </div>
     </v-card>
 
+    <!-- Học phí -->
     <v-card
       v-if="result"
-      class="pa-4 mb-3"
+      rounded="xl"
+      class="mb-4"
     >
-      <p class="text-title-small">
-        Tháng này
-      </p>
-      <p>Số buổi đã học: {{ result.totals.present + result.totals.absent }}</p>
-      <p>Tổng phí: <MoneyText :value="result.totals.confirmedAmount" /></p>
-      <v-chip
-        :color="result.paymentStatus === 'paid' ? 'success' : 'warning'"
-        size="small"
-      >
-        {{ result.paymentStatus === 'paid' ? 'Đã thu' : 'Chưa thu' }}
-      </v-chip>
-
-      <div
-        v-if="qrUrl"
-        class="text-center mt-4"
-      >
-        <v-divider class="mb-3" />
-        <p class="text-title-small mb-2">
-          Quét mã để chuyển học phí
-        </p>
-        <img
-          :src="qrUrl"
-          alt="QR chuyển khoản học phí"
-          style="max-width: 260px; width: 100%; height: auto;"
-        >
-        <p class="text-body-small text-medium-emphasis mt-2">
-          Số tiền: <MoneyText :value="result.totals.confirmedAmount" />
-        </p>
+      <div class="pa-5">
+        <div class="d-flex align-center justify-space-between mb-2">
+          <span class="text-title-small text-medium-emphasis text-capitalize">Học phí {{ monthLabel }}</span>
+          <v-chip
+            :color="result.paymentStatus === 'paid' ? 'success' : 'warning'"
+            :prepend-icon="result.paymentStatus === 'paid' ? 'mdi-check-circle' : 'mdi-clock-outline'"
+            size="small"
+            variant="tonal"
+          >
+            {{ result.paymentStatus === 'paid' ? 'Đã thu' : 'Chưa thu' }}
+          </v-chip>
+        </div>
+        <MoneyText
+          :value="result.totals.confirmedAmount"
+          class="text-headline-medium font-weight-bold"
+        />
+        <div class="text-body-small text-medium-emphasis mt-1">
+          {{ result.totals.present + result.totals.absent }} buổi đã học
+        </div>
       </div>
+
+      <template v-if="qrUrl">
+        <v-divider />
+        <div class="pa-5 text-center">
+          <p class="text-title-small font-weight-medium mb-1">
+            Quét mã để chuyển học phí
+          </p>
+          <p class="text-body-small text-medium-emphasis mb-4">
+            Số tiền và nội dung đã được điền sẵn trong mã
+          </p>
+          <v-sheet
+            border
+            rounded="lg"
+            class="d-inline-block pa-3"
+          >
+            <img
+              :src="qrUrl"
+              alt="QR chuyển khoản học phí"
+              width="220"
+              height="220"
+              style="display: block; width: 220px; height: auto;"
+            >
+          </v-sheet>
+          <div class="mt-3">
+            <MoneyText
+              :value="result.totals.confirmedAmount"
+              class="text-title-medium font-weight-bold text-primary"
+            />
+          </div>
+        </div>
+      </template>
     </v-card>
   </div>
 </template>

@@ -11,7 +11,8 @@
     "lint": "eslint 'src/**/*.{ts,vue}' --max-warnings 0",
     "emulator": "firebase emulators:start --only auth,firestore",
     "dev:full": "concurrently -k -n emulator,vite -c blue,green \"npm run emulator\" \"npm run dev\"",
-    "deploy": "firebase deploy --only firestore:rules,firestore:indexes,hosting"
+    "deploy": "firebase deploy --only firestore:rules,firestore:indexes,hosting",
+    "test:rules": "vitest --config vitest.rules.config.ts run"
   },
   "type": "module",
   "private": true,

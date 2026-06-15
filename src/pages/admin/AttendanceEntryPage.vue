@@ -78,6 +78,12 @@ async function saveAll(): Promise<void> {
   }
 }
 
+function markAll(value: AttendanceStatus): void {
+  const next = { ...status.value };
+  for (const s of list.value) next[s.id] = value;
+  status.value = next;
+}
+
 function shiftDate(delta: number): void {
   router.replace({ name: "admin-attendance", params: { classId: props.classId, date: addDays(props.date, delta) } });
 }
@@ -132,6 +138,35 @@ function shiftDate(delta: number): void {
         </span>
       </div>
     </v-card>
+
+    <div class="d-flex flex-wrap align-center ga-2 mb-3">
+      <span class="text-body-medium text-medium-emphasis mr-1">Đánh dấu tất cả:</span>
+      <v-btn
+        size="small"
+        variant="tonal"
+        color="success"
+        prepend-icon="mdi-check-all"
+        @click="markAll('present')"
+      >
+        Có mặt
+      </v-btn>
+      <v-btn
+        size="small"
+        variant="tonal"
+        color="info"
+        @click="markAll('excused')"
+      >
+        Có phép
+      </v-btn>
+      <v-btn
+        size="small"
+        variant="tonal"
+        color="error"
+        @click="markAll('absent')"
+      >
+        Vắng
+      </v-btn>
+    </div>
 
     <v-card class="mb-4">
       <v-list lines="two">

@@ -44,11 +44,14 @@ function update(key: DayKey, field: "start" | "end", value: string): void {
     >
       <v-card
         variant="outlined"
+        rounded="lg"
         class="pa-3"
+        :color="local[d.key] ? 'primary' : undefined"
       >
         <div class="d-flex align-center mb-2">
           <v-checkbox-btn
             :model-value="!!local[d.key]"
+            color="primary"
             @update:model-value="toggle(d.key)"
           />
           <span class="text-body-large font-weight-medium ml-1">{{ d.label }}</span>

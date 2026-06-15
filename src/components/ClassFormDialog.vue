@@ -84,47 +84,102 @@ void endAttrs;
 <template>
   <v-dialog
     :model-value="modelValue"
-    max-width="800"
+    max-width="720"
+    scrollable
     @update:model-value="emit('update:modelValue', $event)"
   >
-    <v-card>
-      <v-card-title>{{ title }}</v-card-title>
-      <v-card-text>
+    <v-card rounded="xl">
+      <v-card-item class="px-5 pt-4">
+        <template #prepend>
+          <v-avatar
+            color="primary"
+            variant="tonal"
+            rounded="lg"
+          >
+            <v-icon icon="mdi-google-classroom" />
+          </v-avatar>
+        </template>
+        <v-card-title>{{ title }}</v-card-title>
+        <template #append>
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            size="small"
+            @click="emit('update:modelValue', false)"
+          />
+        </template>
+      </v-card-item>
+      <v-divider />
+
+      <v-card-text class="py-5">
         <v-form @submit.prevent="submit">
+          <div class="d-flex align-center ga-2 mb-3">
+            <v-icon
+              icon="mdi-information-outline"
+              size="small"
+              color="primary"
+            />
+            <span class="text-title-small font-weight-bold">Thông tin cơ bản</span>
+          </div>
           <v-text-field
             v-model="name"
             label="Tên lớp"
+            prepend-inner-icon="mdi-rename-box-outline"
             v-bind="nameAttrs"
           />
           <v-row>
-            <v-col cols="6">
+            <v-col
+              cols="12"
+              sm="6"
+            >
               <v-text-field
                 v-model="startDate"
                 label="Ngày bắt đầu"
                 type="date"
+                prepend-inner-icon="mdi-calendar-start"
                 v-bind="startAttrs"
               />
             </v-col>
-            <v-col cols="6">
+            <v-col
+              cols="12"
+              sm="6"
+            >
               <v-text-field
                 v-model="endDate"
                 label="Ngày kết thúc"
                 type="date"
+                prepend-inner-icon="mdi-calendar-end"
                 v-bind="endAttrs"
               />
             </v-col>
           </v-row>
-          <p class="text-title-small mt-4">
-            Lịch tuần
-          </p>
+
+          <v-divider class="my-5" />
+          <div class="d-flex align-center ga-2 mb-3">
+            <v-icon
+              icon="mdi-calendar-week"
+              size="small"
+              color="primary"
+            />
+            <span class="text-title-small font-weight-bold">Lịch tuần</span>
+          </div>
           <ClassScheduleForm v-model="weekly" />
-          <p class="text-title-small mt-4">
-            Đơn giá theo thời gian
-          </p>
+
+          <v-divider class="my-5" />
+          <div class="d-flex align-center ga-2 mb-3">
+            <v-icon
+              icon="mdi-cash-multiple"
+              size="small"
+              color="primary"
+            />
+            <span class="text-title-small font-weight-bold">Đơn giá theo thời gian</span>
+          </div>
           <RateHistoryEditor v-model="rateHistory" />
         </v-form>
       </v-card-text>
-      <v-card-actions>
+
+      <v-divider />
+      <v-card-actions class="px-5 py-3">
         <v-spacer />
         <v-btn
           variant="text"
@@ -135,6 +190,7 @@ void endAttrs;
         <v-btn
           color="primary"
           variant="flat"
+          prepend-icon="mdi-content-save"
           @click="submit"
         >
           Lưu

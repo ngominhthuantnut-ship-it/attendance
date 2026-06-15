@@ -60,6 +60,36 @@ npm run deploy
 - If you ever change the `teacherUid` (e.g., new Google account), edit `meta/config` directly in Firestore console.
 - The `firestore.rules` bootstrap is hard-coded to the email `ngominhthuan.tnut@gmail.com`. If you change accounts, update the rules and redeploy.
 
+## v1.x — Bổ sung & lưu ý vận hành
+
+### Rules phải deploy lại khi đổi
+Các tính năng v1.x dùng collection mới (`studentCodes`) + field config (`adminEmails`, `payment`). Sau khi sửa `firestore.rules` **bắt buộc**:
+```bash
+firebase deploy --only firestore:rules        # hoặc: firestore:rules,hosting
+```
+Nếu chỉ deploy hosting mà quên rules → trang **tra cứu** / **admin phụ** sẽ báo permission denied.
+
+### Admin phụ (giáo viên dạy thay)
+1. Chủ tài khoản → **Cài đặt → Admin phụ** → nhập **email Google** người hỗ trợ → Thêm.
+2. Người đó đăng nhập Google bằng đúng email → có toàn quyền. Chỉ chủ mới thêm/xoá được.
+
+### Trang tra cứu chung cho phụ huynh
+- Link chung: `https://attendance-fa916.web.app/tra-cuu` — gửi cả nhóm phụ huynh.
+- Lấy **mã** từng HS: Chi tiết lớp → tab Học sinh (chip mã / nút "Tải mã tra cứu" ra Excel), hoặc thẻ "Chia sẻ cho phụ huynh".
+
+### Google Calendar (trang "Lịch")
+Cần cấu hình ở **Google Cloud Console** (project `attendance-fa916`):
+1. **APIs & Services → OAuth consent screen**: thêm scope `.../auth/calendar.events`.
+2. Thêm tài khoản chủ + admin vào **Test users** (scope nhạy cảm; chưa "verify app" thì chỉ test users dùng được — sẽ có cảnh báo "app chưa xác minh" → Advanced → tiếp tục).
+3. Đăng nhập lại để được hỏi cấp quyền Calendar.
+
+### PWA (cài như app)
+- Chỉ cài được qua **HTTPS** (`*.web.app`) hoặc `localhost`. Nút **"Cài đặt ứng dụng"** hiện ở drawer admin / app bar phụ huynh khi trình duyệt đủ điều kiện; iOS Safari có hướng dẫn "Thêm vào Màn hình chính".
+- Cập nhật app: service worker `autoUpdate` — người dùng nhận bản mới ở lần mở kế tiếp.
+
+### Thư viện thêm (v1.x)
+`xlsx` (SheetJS, cài từ CDN chính chủ — import/export Excel) · `dompurify` (làm sạch HTML ghi chú) · `vite-plugin-pwa` + `@vite-pwa/assets-generator` (dev).
+
 ## Troubleshooting
 
 - "404 Not Found" after deploy: ensure Hosting `rewrites` are configured for SPA (`firebase.json` already does this).

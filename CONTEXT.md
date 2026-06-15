@@ -6,8 +6,9 @@
 
 | Persona | Mô tả |
 |---|---|
-| **Giáo viên** (Teacher) | Chủ trung tâm. Duy nhất 1 người. Đăng nhập Google. Toàn quyền trên dữ liệu. |
-| **Phụ huynh** (Parent) | Không đăng nhập. Truy cập qua **Link phụ huynh** giáo viên gửi. Chỉ đọc, không sửa. |
+| **Chủ tài khoản** (Owner) | Giáo viên gốc, xác định bằng `meta/config.teacherUid`. Toàn quyền + quản lý admin phụ. |
+| **Admin phụ** (Secondary admin) | Giáo viên hỗ trợ/dạy thay. Email Google nằm trong `meta/config.adminEmails`. **Toàn quyền** như chủ, nhưng KHÔNG sửa được danh sách admin. |
+| **Phụ huynh** (Parent) | Không đăng nhập. Truy cập qua **Link phụ huynh** hoặc **trang tra cứu chung + mã**. Chỉ đọc, không sửa. |
 
 ## 2. Khái niệm cốt lõi
 
@@ -134,6 +135,23 @@ Khi xoá HS:
 - **Day-of-week label**: T2, T3, T4, T5, T6, T7, CN
 - **Month label**: `Tháng MM/YYYY` (vd "Tháng 6/2026")
 
-## 5. Things NOT in scope (xem PRD)
+## 5. Thuật ngữ bổ sung (v1.x)
+
+### Mã tra cứu (Lookup Code)
+Mã ngắn **6 ký tự** (bảng chữ bỏ ký tự dễ nhầm `0/O/1/I/L`), gắn 1-1 với học sinh, **giáo viên cấp cho phụ huynh**. Lưu ở `student.lookupCode` + doc `studentCodes/{MÃ}` → `{ studentId, token }`.
+
+### Trang tra cứu chung (Parent Lookup)
+URL công khai `/tra-cuu` — gửi cho **cả nhóm phụ huynh**. Phụ huynh nhập **mã tra cứu** → chuyển tới Link phụ huynh (`/p/<token>`) của đúng con mình. Mục đích: 1 link chung thay vì gửi link riêng từng HS.
+
+### Nhận xét buổi học (Note)
+Ghi chú của giáo viên cho 1 học sinh trong 1 buổi (`attendance[date].note`), dạng **HTML rich-text cơ bản** (đậm/nghiêng/gạch chân/danh sách/font). Render cho phụ huynh xem, **làm sạch bằng DOMPurify**.
+
+### Cấu hình thanh toán (Payment Config) & QR
+`meta/config.payment = { bankAccount, bankCode, accountHolder, storeName, template, showInfo, fullAcc }`. Dùng tạo **mã QR VietQR** (qua sepay.vn) hiển thị cho phụ huynh khi chưa thu. Nội dung CK: `<Tên HS không dấu> T<tháng><năm>` (vd `Nguyen Van A T62026`).
+
+### Firestore collections (tổng hợp)
+`meta/config` · `classes/{id}` · `students/{id}` (+ `months/{YYYY-MM}`) · `parentLinks/{token}` · `studentCodes/{code}`.
+
+## 6. Things NOT in scope (xem PRD)
 
 Xem `docs/PRD.md` mục "Out of scope" cho danh sách đầy đủ những thứ KHÔNG làm trong v1.

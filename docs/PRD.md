@@ -180,12 +180,50 @@ Mục tiêu phụ:
 | Multi-class enrollment 1 HS | Nếu cần, tạo HS riêng cho mỗi lớp |
 | I18n / đa ngôn ngữ | Tiếng Việt only |
 | Dark mode | Vuetify hỗ trợ, không bật ban đầu |
-| PWA / offline | Không priority |
+| PWA / offline | ~~Không priority~~ → **đã làm ở v1.x** (mục 10) |
+| Phân quyền admin/teacher | ~~Không cần~~ → **đã làm admin phụ ở v1.x** (mục 10) |
 | Print PDF từ trình duyệt | User đã chọn link share thay vì print |
 
 ## 8. Tiêu chí nghiệm thu v1
 
 Xem `docs/superpowers/specs/2026-06-15-attendance-management-design.md` mục "Acceptance criteria cho v1".
+
+## 10. Bổ sung sau v1 (v1.x — đã triển khai)
+
+Các tính năng phát triển thêm sau bản v1, đã deploy lên production:
+
+### 10.1. Admin phụ (multi-admin allow-list)
+- US-T23: Là **chủ tài khoản**, tôi vào **Cài đặt** thêm/xoá **email Google** của người hỗ trợ (giáo viên dạy thay).
+- Người có email trong `meta/config.adminEmails` (đã xác thực) đăng nhập Google → **toàn quyền** như chủ.
+- **Chỉ chủ** (`teacherUid`) sửa được danh sách admin; `teacherUid` bất biến. Rule: `isTeacher() = chủ HOẶC email ∈ adminEmails`.
+
+### 10.2. Mã tra cứu + trang tra cứu chung cho phụ huynh
+- US-T24: Mỗi học sinh có **mã tra cứu** ngắn (6 ký tự, tự sinh). Hiển thị trong danh sách HS + thẻ chia sẻ; tải Excel (`Họ tên · SĐT · Mã`).
+- US-P06: Phụ huynh mở **1 link chung** `/tra-cuu`, nhập **mã** của con → xem được Tổng quan + Điểm danh (thay vì gửi link riêng từng HS).
+- Collection mới `studentCodes/{MÃ}` → `{ studentId, token }` (get công khai, list cấm, ghi chỉ teacher).
+
+### 10.3. Ghi chú/nhận xét buổi học (rich-text)
+- US-T25: Khi điểm danh, mỗi HS có ô **ghi chú nhiều dòng + định dạng cơ bản** (đậm/nghiêng/gạch chân/danh sách/chọn font). Mặc định thu gọn, mở khi cần.
+- US-P07: Phụ huynh xem **nhận xét** (render HTML) trong tab điểm danh. HTML được **làm sạch bằng DOMPurify** trước khi lưu & hiển thị.
+
+### 10.4. QR chuyển khoản (VietQR / sepay)
+- US-T26: Cài đặt thông tin ngân hàng (số TK, mã NH, chủ TK…) ở **Cài đặt → Thanh toán**.
+- US-P08: Ở Tổng quan phụ huynh, khi **chưa thu** & số tiền > 0 → hiện **mã QR** chuyển khoản (số tiền = học phí đã chốt; nội dung = `<Tên HS> T<tháng><năm>`).
+
+### 10.5. Nhập học sinh từ Excel
+- US-T27: Tải **file mẫu** Excel; nhập danh sách HS hàng loạt; **xem trước** rồi mới lưu. Trùng **tên + SĐT + tên phụ huynh** → ghi đè.
+
+### 10.6. Lịch Google Calendar (cá nhân)
+- US-T28: Trang **Lịch** nhúng Google Calendar cá nhân (xem Tháng/Tuần/Ngày, tạo/sửa/xoá sự kiện, lặp lại, nhắc nhở). Dữ liệu ở Google, không lưu Firestore. Quyền `calendar.events` gộp vào đăng nhập Google. Xem spec: `docs/superpowers/specs/2026-06-15-google-calendar-integration-design.md`.
+
+### 10.7. PWA (cài như app)
+- US-T29 / US-P09: Cài app vào màn hình chính trên mobile/desktop (nút **"Cài đặt ứng dụng"**; iOS có hướng dẫn). Service worker + manifest qua `vite-plugin-pwa`.
+
+### 10.8. Cải tiến điểm danh & dashboard
+- Điểm danh **hàng loạt** (nút "Tất cả: Có mặt / Có phép / Vắng").
+- Màn ngày không có buổi: vẫn giữ điều hướng ‹ ›, chỉ ẩn danh sách/nút lưu.
+- Dashboard có **timeline lịch dạy hôm nay** (theo khung giờ). Thống kê chỉ tính lớp **chưa kết thúc**.
+- Màn Học phí: **bộ lọc** (tên/lớp/SĐT/trạng thái), **bắt chọn lớp** trước khi tải (giảm reads), công tắc on/off đánh dấu đã thu (có xác nhận).
 
 ## 9. References
 

@@ -90,7 +90,7 @@ function shiftDate(delta: number): void {
 </script>
 
 <template>
-  <div v-if="cls && session">
+  <div v-if="cls">
     <v-btn
       variant="text"
       size="small"
@@ -114,7 +114,8 @@ function shiftDate(delta: number): void {
             {{ formatVnDate(date) }}
           </div>
           <div class="text-body-medium text-medium-emphasis">
-            {{ session.start }} – {{ session.end }}
+            <template v-if="session">{{ session.start }} – {{ session.end }}</template>
+            <template v-else>Không có buổi học</template>
           </div>
         </div>
         <v-btn
@@ -124,21 +125,34 @@ function shiftDate(delta: number): void {
           @click="shiftDate(1)"
         />
       </div>
-      <v-divider class="my-4" />
-      <div class="d-flex align-center ga-3">
-        <v-progress-linear
-          :model-value="list.length ? (markedCount / list.length) * 100 : 0"
-          color="primary"
-          height="8"
-          rounded
-          class="flex-grow-1"
-        />
-        <span class="text-body-medium font-weight-medium text-no-wrap">
-          {{ markedCount }}/{{ list.length }}
-        </span>
-      </div>
+      <template v-if="session">
+        <v-divider class="my-4" />
+        <div class="d-flex align-center ga-3">
+          <v-progress-linear
+            :model-value="list.length ? (markedCount / list.length) * 100 : 0"
+            color="primary"
+            height="8"
+            rounded
+            class="flex-grow-1"
+          />
+          <span class="text-body-medium font-weight-medium text-no-wrap">
+            {{ markedCount }}/{{ list.length }}
+          </span>
+        </div>
+      </template>
     </v-card>
 
+    <!-- Ngày không có buổi: chỉ hiện thông báo, vẫn giữ điều hướng ngày ở trên -->
+    <v-alert
+      v-if="!session"
+      type="info"
+      variant="tonal"
+      icon="mdi-calendar-blank-outline"
+    >
+      Ngày này không có buổi học. Dùng nút ‹ › để chuyển sang ngày khác.
+    </v-alert>
+
+    <template v-if="session">
     <div class="d-flex flex-wrap align-center ga-2 mb-3">
       <span class="text-body-medium text-medium-emphasis mr-1">Đánh dấu tất cả:</span>
       <v-btn
@@ -234,6 +248,7 @@ function shiftDate(delta: number): void {
         Lưu tất cả
       </v-btn>
     </div>
+    </template>
 
     <v-snackbar
       v-model="snackbar"
@@ -244,11 +259,9 @@ function shiftDate(delta: number): void {
       {{ snackbarText }}
     </v-snackbar>
   </div>
-  <v-alert
+  <v-progress-linear
     v-else
-    type="info"
-    variant="tonal"
-  >
-    Đang tải buổi học, hoặc ngày này không có buổi.
-  </v-alert>
+    indeterminate
+    color="primary"
+  />
 </template>

@@ -15,9 +15,8 @@
     "jsx": "preserve",
     "skipLibCheck": true,
     "types": ["vite/client", "node"],
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.vue", "src/**/*.tsx", "tests/**/*.ts"],

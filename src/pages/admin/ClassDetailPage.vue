@@ -16,6 +16,7 @@ import {
   readStudentRows,
   rowsToStudents,
   dedupKey,
+  type ImportedStudent,
 } from "@/lib/studentExcel";
 import { expandSchedule, type Session } from "@/composables/useScheduleCompute";
 import {
@@ -195,6 +196,12 @@ function openEdit(s: Student): void {
   showStudentForm.value = true;
 }
 
+interface PreviewRow {
+  student: ImportedStudent;
+  key: string;
+  action: "insert" | "update";
+}
+
 const importing = ref(false);
 const importInput = ref<HTMLInputElement | null>(null);
 const importMsg = ref<{ open: boolean; text: string; color: "success" | "error" }>({
@@ -202,11 +209,17 @@ const importMsg = ref<{ open: boolean; text: string; color: "success" | "error" 
   text: "",
   color: "success",
 });
+const preview = ref<{ open: boolean; rows: PreviewRow[]; skipped: number }>({
+  open: false,
+  rows: [],
+  skipped: 0,
+});
 
 function triggerImport(): void {
   importInput.value?.click();
 }
 
+// Bước 1: đọc file & dựng preview, CHƯA ghi DB.
 async function onImportFile(e: Event): Promise<void> {
   const input = e.target as HTMLInputElement;
   const file = input.files?.[0];
@@ -216,34 +229,58 @@ async function onImportFile(e: Event): Promise<void> {
   try {
     const rows = await readStudentRows(file);
     const { students: imported, skipped } = rowsToStudents(rows, cls.value.startDate);
+    const existing = new Set(
+      studentList.value.map((s) => dedupKey(s.name, s.parentPhone, s.parentName)),
+    );
+    const seen = new Set<string>();
+    const rowsOut: PreviewRow[] = imported.map((student) => {
+      const key = dedupKey(student.name, student.parentPhone, student.parentName);
+      const action: "insert" | "update" = existing.has(key) || seen.has(key) ? "update" : "insert";
+      seen.add(key);
+      return { student, key, action };
+    });
+    preview.value = { open: true, rows: rowsOut, skipped };
+  } catch (err) {
+    console.error(err);
+    importMsg.value = { open: true, color: "error", text: "Đọc file thất bại. Kiểm tra đúng định dạng file mẫu." };
+  } finally {
+    importing.value = false;
+  }
+}
+
+// Bước 2: người dùng bấm "Lưu" → mới ghi DB.
+async function confirmImport(): Promise<void> {
+  if (!cls.value) return;
+  importing.value = true;
+  try {
     const existing = new Map<string, string>(
       studentList.value.map((s) => [dedupKey(s.name, s.parentPhone, s.parentName), s.id]),
     );
     let inserted = 0;
     let updated = 0;
-    for (const imp of imported) {
-      const data = { ...imp, classId: props.classId, status: "active" as const };
-      const key = dedupKey(imp.name, imp.parentPhone, imp.parentName);
-      const id = existing.get(key);
+    for (const row of preview.value.rows) {
+      const data = { ...row.student, classId: props.classId, status: "active" as const };
+      const id = existing.get(row.key);
       if (id) {
         await students.update(id, data);
         updated += 1;
       } else {
         const newId = crypto.randomUUID();
         await students.create(newId, data);
-        existing.set(key, newId);
+        existing.set(row.key, newId);
         inserted += 1;
       }
     }
+    preview.value = { open: false, rows: [], skipped: 0 };
     await reload();
     importMsg.value = {
       open: true,
       color: "success",
-      text: `Đã nhập: thêm ${inserted}, cập nhật ${updated}${skipped ? `, bỏ qua ${skipped} dòng thiếu họ tên` : ""}.`,
+      text: `Đã lưu: thêm ${inserted}, cập nhật ${updated}.`,
     };
   } catch (err) {
     console.error(err);
-    importMsg.value = { open: true, color: "error", text: "Đọc file thất bại. Kiểm tra đúng định dạng file mẫu." };
+    importMsg.value = { open: true, color: "error", text: "Lưu thất bại, vui lòng thử lại." };
   } finally {
     importing.value = false;
   }
@@ -822,6 +859,91 @@ async function saveMakeup(): Promise<void> {
     >
       {{ importMsg.text }}
     </v-snackbar>
+
+    <v-dialog
+      v-model="preview.open"
+      max-width="720"
+      scrollable
+    >
+      <v-card>
+        <v-card-title>Xem trước danh sách nhập</v-card-title>
+        <v-card-subtitle>
+          {{ preview.rows.length }} học sinh hợp lệ
+          ({{ preview.rows.filter((r) => r.action === 'insert').length }} thêm mới,
+          {{ preview.rows.filter((r) => r.action === 'update').length }} cập nhật)
+          <template v-if="preview.skipped">· bỏ qua {{ preview.skipped }} dòng thiếu họ tên</template>
+        </v-card-subtitle>
+        <v-divider />
+        <v-card-text style="max-height: 60vh;">
+          <v-table
+            v-if="preview.rows.length"
+            density="comfortable"
+          >
+            <thead>
+              <tr>
+                <th>Họ tên</th>
+                <th>SĐT</th>
+                <th>Phụ huynh</th>
+                <th>Bắt đầu</th>
+                <th class="text-center">
+                  Thao tác
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="(r, i) in preview.rows"
+                :key="i"
+              >
+                <td class="font-weight-medium">
+                  {{ r.student.name }}
+                </td>
+                <td class="tnum">
+                  {{ r.student.parentPhone || "—" }}
+                </td>
+                <td>{{ r.student.parentName || "—" }}</td>
+                <td>{{ r.student.startDate }}</td>
+                <td class="text-center">
+                  <v-chip
+                    :color="r.action === 'insert' ? 'success' : 'warning'"
+                    size="x-small"
+                    variant="tonal"
+                  >
+                    {{ r.action === 'insert' ? 'Thêm mới' : 'Cập nhật' }}
+                  </v-chip>
+                </td>
+              </tr>
+            </tbody>
+          </v-table>
+          <p
+            v-else
+            class="text-medium-emphasis py-4"
+          >
+            Không có học sinh hợp lệ trong file.
+          </p>
+        </v-card-text>
+        <v-divider />
+        <v-card-actions>
+          <v-spacer />
+          <v-btn
+            variant="text"
+            :disabled="importing"
+            @click="preview = { open: false, rows: [], skipped: 0 }"
+          >
+            Huỷ
+          </v-btn>
+          <v-btn
+            color="primary"
+            variant="flat"
+            :loading="importing"
+            :disabled="preview.rows.length === 0"
+            @click="confirmImport"
+          >
+            Lưu {{ preview.rows.length }} học sinh
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 

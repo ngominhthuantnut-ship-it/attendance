@@ -8,6 +8,9 @@ import "@mdi/font/css/materialdesignicons.css";
 import "./styles/app.css";
 import App from "./App.vue";
 import { router } from "./router";
+import { registerInstallPrompt } from "./composables/usePwaInstall";
+
+registerInstallPrompt();
 
 const light: ThemeDefinition = {
   dark: false,

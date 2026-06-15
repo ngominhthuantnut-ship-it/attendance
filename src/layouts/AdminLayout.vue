@@ -3,6 +3,7 @@ import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useDisplay } from "vuetify";
 import { useAuthStore } from "@/stores/useAuthStore";
+import InstallAppButton from "@/components/InstallAppButton.vue";
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -99,6 +100,9 @@ async function logout(): Promise<void> {
 
       <template #append>
         <v-divider />
+        <div class="px-3 pt-3">
+          <InstallAppButton block />
+        </div>
         <div class="pa-3">
           <v-list-item
             :title="displayName"

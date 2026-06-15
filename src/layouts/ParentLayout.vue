@@ -2,6 +2,7 @@
 import { onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useParentStore } from "@/stores/useParentStore";
+import InstallAppButton from "@/components/InstallAppButton.vue";
 
 const props = defineProps<{ token: string }>();
 const route = useRoute();
@@ -50,6 +51,9 @@ void route;
           Đang tải...
         </template>
       </v-app-bar-title>
+      <template #append>
+        <InstallAppButton variant="text" />
+      </template>
     </v-app-bar>
 
     <v-main>

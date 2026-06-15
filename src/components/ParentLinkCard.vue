@@ -14,22 +14,50 @@ async function copy(): Promise<void> {
 </script>
 
 <template>
-  <v-card variant="outlined">
-    <v-card-title class="text-body-large">
-      Link cho phụ huynh
-    </v-card-title>
+  <v-card
+    color="surface"
+    rounded="xl"
+  >
+    <v-card-item>
+      <template #prepend>
+        <v-avatar
+          color="primary"
+          variant="tonal"
+          rounded="lg"
+        >
+          <v-icon icon="mdi-link-variant" />
+        </v-avatar>
+      </template>
+      <v-card-title class="text-title-medium">
+        Link cho phụ huynh
+      </v-card-title>
+      <v-card-subtitle>Gửi link này để phụ huynh xem điểm danh & học phí</v-card-subtitle>
+    </v-card-item>
     <v-card-text>
       <v-text-field
         :model-value="url"
         readonly
         variant="outlined"
-        density="compact"
+        density="comfortable"
         hide-details
-      />
+      >
+        <template #append-inner>
+          <v-btn
+            :icon="copied ? 'mdi-check' : 'mdi-content-copy'"
+            :color="copied ? 'success' : 'primary'"
+            variant="text"
+            size="small"
+            title="Copy link"
+            @click="copy"
+          />
+        </template>
+      </v-text-field>
     </v-card-text>
     <v-card-actions>
+      <v-spacer />
       <v-btn
         prepend-icon="mdi-content-copy"
+        variant="flat"
         :color="copied ? 'success' : 'primary'"
         @click="copy"
       >

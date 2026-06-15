@@ -59,6 +59,14 @@ const invoiceUrl = computed(() =>
   student.value ? parentInvoiceUrl(student.value.parentLinkToken, month.value) : "",
 );
 
+const invoiceCopied = ref(false);
+async function copyInvoice(): Promise<void> {
+  if (!invoiceUrl.value) return;
+  await navigator.clipboard.writeText(invoiceUrl.value);
+  invoiceCopied.value = true;
+  setTimeout(() => (invoiceCopied.value = false), 1500);
+}
+
 async function markPaid(): Promise<void> {
   if (!student.value || !result.value) return;
   await months.markPaid(student.value.id, month.value, result.value.totals.confirmedAmount);
@@ -259,10 +267,21 @@ async function unmarkPaid(): Promise<void> {
             <v-text-field
               :model-value="invoiceUrl"
               readonly
-              density="compact"
+              density="comfortable"
               hide-details
               prepend-inner-icon="mdi-link-variant"
-            />
+            >
+              <template #append-inner>
+                <v-btn
+                  :icon="invoiceCopied ? 'mdi-check' : 'mdi-content-copy'"
+                  :color="invoiceCopied ? 'success' : 'primary'"
+                  variant="text"
+                  size="small"
+                  title="Copy link hoá đơn"
+                  @click="copyInvoice"
+                />
+              </template>
+            </v-text-field>
           </template>
         </v-card>
       </v-col>

@@ -67,12 +67,19 @@ async function load(): Promise<void> {
   if (!cls) return;
   loading.value = true;
   try {
+    const ym = month.value;
     const stuList = await students.listByClass(cls.id, "active");
-    for (const stu of stuList) {
-      const md = await months.get(stu.id, month.value, false);
-      const r = computeMonth({ cls, student: stu, monthDoc: md, yearMonth: month.value });
-      rows.value.push({ student: stu, cls, confirmed: r.totals.confirmedAmount, status: r.paymentStatus });
-    }
+    // Đọc month-doc của tất cả HS SONG SONG (Promise.all) thay vì tuần tự trong vòng lặp:
+    // số reads không đổi nhưng thời gian chờ giảm từ N×latency xuống ~1 round-trip.
+    const result = await Promise.all(
+      stuList.map(async (stu) => {
+        const md = await months.get(stu.id, ym, false);
+        const r = computeMonth({ cls, student: stu, monthDoc: md, yearMonth: ym });
+        return { student: stu, cls, confirmed: r.totals.confirmedAmount, status: r.paymentStatus };
+      }),
+    );
+    // Bỏ kết quả cũ nếu người dùng đã đổi tháng/lớp trong lúc chờ (tránh ghi đè dữ liệu mới).
+    if (ym === month.value && applied.value.classId === classId) rows.value = result;
   } finally {
     loading.value = false;
   }

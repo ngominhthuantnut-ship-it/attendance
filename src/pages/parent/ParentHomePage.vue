@@ -5,7 +5,7 @@ import { useConfigStore } from "@/stores/useConfigStore";
 import { computeMonth } from "@/composables/useBillingCompute";
 import { monthOf, todayISO, formatVnDate } from "@/lib/dates";
 import { buildSepayQrUrl, buildTransferDescription, isPaymentConfigured } from "@/lib/payment";
-import type { MonthDoc } from "@/types";
+import type { DayKey, MonthDoc } from "@/types";
 import MoneyText from "@/components/MoneyText.vue";
 import MonthPicker from "@/components/MonthPicker.vue";
 
@@ -50,8 +50,10 @@ const qrUrl = computed(() => {
 
 const dayLabel = computed(() => {
   if (!parent.cls) return "";
-  const labels: Record<string, string> = { mon: "T2", tue: "T3", wed: "T4", thu: "T5", fri: "T6", sat: "T7", sun: "CN" };
-  return Object.keys(parent.cls.weeklySchedule).map((k) => labels[k]).join(", ");
+  const schedule = parent.cls.weeklySchedule;
+  const order: DayKey[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+  const labels: Record<DayKey, string> = { mon: "T2", tue: "T3", wed: "T4", thu: "T5", fri: "T6", sat: "T7", sun: "CN" };
+  return order.filter((k) => schedule[k]).map((k) => labels[k]).join(", ");
 });
 
 const initial = computed(() => parent.student?.name.trim().slice(0, 1).toUpperCase() ?? "?");

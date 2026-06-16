@@ -11,6 +11,7 @@ import ConfirmDialog from "@/components/ConfirmDialog.vue";
 import EmptyState from "@/components/EmptyState.vue";
 import ParentLinkCard from "@/components/ParentLinkCard.vue";
 import MoneyText from "@/components/MoneyText.vue";
+import ZaloIcon from "@/components/ZaloIcon.vue";
 import {
   downloadStudentTemplate,
   downloadStudentCodes,
@@ -744,67 +745,98 @@ async function saveMakeup(): Promise<void> {
               Thêm học sinh
             </v-btn>
           </EmptyState>
-          <v-list
-            v-else
-            lines="two"
-          >
+          <div v-else>
             <template
               v-for="(s, i) in studentList"
               :key="s.id"
             >
               <v-divider v-if="i > 0" />
-              <v-list-item
-                :subtitle="`SĐT phụ huynh: ${s.parentPhone || '—'}`"
+              <div
+                class="pa-3 student-row"
                 @click="router.push({ name: 'admin-student-detail', params: { studentId: s.id } })"
               >
-                <template #prepend>
-                  <v-avatar
-                    color="primary"
-                    variant="tonal"
-                    size="40"
+                <!-- Dòng 1: tên + mã + nút quản lý -->
+                <div class="d-flex align-center ga-2">
+                  <div
+                    class="flex-grow-1 d-flex align-center ga-2 flex-wrap"
+                    style="min-width: 0"
                   >
-                    <span class="text-label-large font-weight-bold">
-                      {{ s.name.trim().slice(0, 1).toUpperCase() }}
-                    </span>
-                  </v-avatar>
-                </template>
-                <v-list-item-title class="d-flex flex-wrap align-center ga-2">
-                  {{ s.name }}
-                  <v-chip
-                    v-if="s.lookupCode"
-                    size="x-small"
-                    color="primary"
-                    variant="tonal"
-                    prepend-icon="mdi-key-variant"
-                    class="code-chip"
-                  >
-                    {{ s.lookupCode }}
-                  </v-chip>
-                </v-list-item-title>
-                <template #append>
-                  <v-btn
-                    icon="mdi-link-variant"
-                    variant="text"
-                    size="small"
-                    @click.stop="openLink(s)"
-                  />
-                  <v-btn
-                    icon="mdi-pencil"
-                    variant="text"
-                    size="small"
-                    @click.stop="openEdit(s)"
-                  />
-                  <v-btn
-                    icon="mdi-delete"
-                    variant="text"
-                    size="small"
-                    color="error"
-                    @click.stop="confirmDelete = { open: true, student: s }"
-                  />
-                </template>
-              </v-list-item>
+                    <span class="text-body-large font-weight-medium">{{ s.name }}</span>
+                    <v-chip
+                      v-if="s.lookupCode"
+                      size="x-small"
+                      color="primary"
+                      variant="tonal"
+                      prepend-icon="mdi-key-variant"
+                      class="code-chip"
+                    >
+                      {{ s.lookupCode }}
+                    </v-chip>
+                  </div>
+                  <div class="d-flex align-center flex-shrink-0">
+                    <v-btn
+                      icon="mdi-link-variant"
+                      variant="text"
+                      size="small"
+                      title="Sao chép link phụ huynh"
+                      @click.stop="openLink(s)"
+                    />
+                    <v-btn
+                      icon="mdi-pencil"
+                      variant="text"
+                      size="small"
+                      title="Sửa học sinh"
+                      @click.stop="openEdit(s)"
+                    />
+                    <v-btn
+                      icon="mdi-delete"
+                      variant="text"
+                      size="small"
+                      color="error"
+                      title="Xoá học sinh"
+                      @click.stop="confirmDelete = { open: true, student: s }"
+                    />
+                  </div>
+                </div>
+                <!-- Dòng 2: SĐT + nút gọi / Zalo -->
+                <div class="d-flex align-center ga-2 mt-1">
+                  <span class="text-body-small text-medium-emphasis tnum">
+                    {{ s.parentPhone || "Chưa có SĐT" }}
+                  </span>
+                  <template v-if="s.parentPhone">
+                    <v-btn
+                      :href="`tel:${s.parentPhone}`"
+                      icon
+                      size="x-small"
+                      variant="flat"
+                      color="success"
+                      :title="`Gọi ${s.parentPhone}`"
+                      aria-label="Gọi điện cho phụ huynh"
+                      @click.stop
+                    >
+                      <v-icon
+                        icon="mdi-phone"
+                        size="16"
+                      />
+                    </v-btn>
+                    <v-btn
+                      :href="`https://zalo.me/${s.parentPhone}`"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      icon
+                      size="x-small"
+                      variant="text"
+                      title="Nhắn tin Zalo"
+                      aria-label="Nhắn tin Zalo cho phụ huynh"
+                      @click.stop
+                    >
+                      <ZaloIcon :size="22" />
+                    </v-btn>
+                  </template>
+                </div>
+              </div>
             </template>
-          </v-list>
+          </div>
         </v-card>
       </v-window-item>
     </v-window>
@@ -998,6 +1030,14 @@ async function saveMakeup(): Promise<void> {
 </template>
 
 <style scoped>
+.student-row {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.student-row:hover {
+  background-color: rgba(var(--v-theme-on-surface), 0.04);
+}
+
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useParentStore } from "@/stores/useParentStore";
 import { useConfigStore } from "@/stores/useConfigStore";
 import { computeMonth } from "@/composables/useBillingCompute";
@@ -7,18 +7,35 @@ import { monthOf, todayISO, formatVnDate } from "@/lib/dates";
 import { buildSepayQrUrl, buildTransferDescription, isPaymentConfigured } from "@/lib/payment";
 import type { MonthDoc } from "@/types";
 import MoneyText from "@/components/MoneyText.vue";
+import MonthPicker from "@/components/MonthPicker.vue";
 
 const props = defineProps<{ token: string }>();
 const parent = useParentStore();
 const config = useConfigStore();
-const monthYM = monthOf(todayISO());
+const month = ref(monthOf(todayISO()));
 const monthDoc = ref<MonthDoc | null>(null);
 
-onMounted(async () => {
+async function loadMonth(): Promise<void> {
+  if (!parent.student) return;
+  // Xoá dữ liệu cũ trước khi tải để không hiện nhầm số tiền tháng trước.
+  monthDoc.value = null;
+  monthDoc.value = await parent.getMonth(parent.student.id, month.value);
+}
+
+onMounted(() => {
   void config.load().catch(() => undefined);
-  if (parent.student) {
-    monthDoc.value = await parent.getMonth(parent.student.id, monthYM);
-  }
+  void loadMonth();
+});
+watch(month, loadMonth);
+
+const result = computed(() => {
+  if (!parent.student || !parent.cls) return null;
+  return computeMonth({
+    cls: parent.cls,
+    student: parent.student,
+    monthDoc: monthDoc.value,
+    yearMonth: month.value,
+  });
 });
 
 const qrUrl = computed(() => {
@@ -27,18 +44,8 @@ const qrUrl = computed(() => {
   if (!r || !parent.student) return null;
   if (r.paymentStatus === "paid" || r.totals.confirmedAmount <= 0) return null;
   if (!isPaymentConfigured(p)) return null;
-  const des = buildTransferDescription(parent.student.name, monthYM);
+  const des = buildTransferDescription(parent.student.name, month.value);
   return buildSepayQrUrl(p, r.totals.confirmedAmount, des);
-});
-
-const result = computed(() => {
-  if (!parent.student || !parent.cls) return null;
-  return computeMonth({
-    cls: parent.cls,
-    student: parent.student,
-    monthDoc: monthDoc.value,
-    yearMonth: monthYM,
-  });
 });
 
 const dayLabel = computed(() => {
@@ -49,7 +56,7 @@ const dayLabel = computed(() => {
 
 const initial = computed(() => parent.student?.name.trim().slice(0, 1).toUpperCase() ?? "?");
 const monthLabel = computed(() => {
-  const [y, m] = monthYM.split("-");
+  const [y, m] = month.value.split("-");
   return `tháng ${Number(m)}/${y}`;
 });
 
@@ -111,6 +118,17 @@ void props;
       </div>
     </v-card>
 
+    <!-- Chọn tháng -->
+    <div class="d-flex justify-center mb-4">
+      <v-sheet
+        rounded="pill"
+        border
+        class="px-1"
+      >
+        <MonthPicker v-model="month" />
+      </v-sheet>
+    </div>
+
     <!-- Học phí -->
     <v-card
       v-if="result"
@@ -168,6 +186,18 @@ void props;
           </div>
         </div>
       </template>
+
+      <v-divider />
+      <v-btn
+        :to="{ name: 'parent-invoice', params: { token, yearMonth: month } }"
+        variant="text"
+        color="primary"
+        block
+        class="py-3"
+        prepend-icon="mdi-file-document-outline"
+      >
+        Xem hoá đơn chi tiết
+      </v-btn>
     </v-card>
   </div>
 </template>

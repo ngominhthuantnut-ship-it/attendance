@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, computed } from "vue";
+import { ref, onBeforeUnmount, computed, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useClassesStore } from "@/stores/useClassesStore";
 import { useStudentsStore } from "@/stores/useStudentsStore";
@@ -31,17 +31,25 @@ async function reload(): Promise<void> {
   unsubs.forEach((u) => u());
   unsubs.length = 0;
 
-  const ym = monthOf(props.date);
+  // Reset state để dữ liệu ngày cũ không còn hiển thị khi chuyển sang ngày khác.
+  status.value = {};
+  notes.value = {};
+  expandedNotes.value = new Set();
+
+  const date = props.date;
+  const ym = monthOf(date);
   for (const s of list.value) {
     const unsub = months.subscribe(s.id, ym, (doc) => {
-      status.value = { ...status.value, [s.id]: doc?.attendance?.[props.date]?.status ?? "unmarked" };
-      notes.value = { ...notes.value, [s.id]: doc?.attendance?.[props.date]?.note ?? "" };
+      status.value = { ...status.value, [s.id]: doc?.attendance?.[date]?.status ?? "unmarked" };
+      notes.value = { ...notes.value, [s.id]: doc?.attendance?.[date]?.note ?? "" };
     });
     unsubs.push(unsub);
   }
 }
 
-onMounted(reload);
+// Route component được tái sử dụng khi đổi ngày/lớp (không remount) → reload thủ công.
+// immediate:true thay cho onMounted để chỉ có MỘT nguồn nạp dữ liệu.
+watch(() => [props.classId, props.date], reload, { immediate: true });
 onBeforeUnmount(() => unsubs.forEach((u) => u()));
 
 const session = computed(() => {
@@ -198,7 +206,10 @@ function shiftDate(delta: number): void {
       </v-btn>
     </div>
 
-    <v-card class="mb-4">
+    <v-card
+      :key="date"
+      class="mb-4"
+    >
       <template
         v-for="(s, i) in list"
         :key="s.id"
